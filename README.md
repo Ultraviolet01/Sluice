@@ -8,6 +8,8 @@ Sluice keeps the money in the company's own vault on **QDay Aevum** and lets the
 
 **Live:** https://usesluice.vercel.app · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot)
 
+**Contents:** [Proven live](#proven-live-on-aevum-testnet) · [How it works](#how-it-works) · [Who it's for](#who-its-for) · [Guardrails](#guardrails-enforced-on-chain) · [Check it](#check-it) · [Run it yourself](#run-it-yourself) · [API reference](#api-reference) · [Known limits](#known-limits) · [**Roadmap**](#roadmap-to-mainnet) · [Team](#team)
+
 Built for **Aevum Builder Challenge #1** · tracks: Native AI Assistants, Invoice Payments.
 
 > All code in this repository was written during the build window (Nov 16 to Dec 11, 2026).
