@@ -67,7 +67,11 @@
 @media (prefers-reduced-motion: reduce) { .ld-ship, .ld-waves img { animation: none; } }
 @media (max-width: 900px) {
   .ld-nav { padding: 16px; gap: 16px; }
-  .ld-nav > a:not(.ld-pill-outline) { display: none; }
+  /* Phones: logo and Open app on the first line, the page links on a second. */
+  .ld-nav { flex-wrap: wrap; row-gap: 10px; column-gap: 20px; padding: 12px 16px 10px; }
+  .ld-nav::after { content: ""; flex-basis: 100%; order: 2; }
+  .ld-nav > a:not(.ld-pill-outline):not(.ld-logo) { order: 3; font-size: 14px; }
+  .ld-nav > .ld-logo { font-size: 20px; }
   .ld-hero, .ld-how, .ld-sec, .ld-close { padding-left: 16px; padding-right: 16px; }
   .ld-hero h1 { font-size: 48px; letter-spacing: -1.2px; }
   .ld-intro, .ld-steps, .ld-sec-row { flex-direction: column; align-items: flex-start; gap: 32px; }

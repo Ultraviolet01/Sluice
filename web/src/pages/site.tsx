@@ -1,15 +1,57 @@
 // Shared frame for the public pages: the landing page, How it works, Security and Docs.
-import type { ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 export const REPO = "https://github.com/ultraviolet01/sluice";
 export const SRC = `${REPO}/blob/main`;
+
+/**
+ * Rises sections, cards and rows into view as they are scrolled to. Elements
+ * already on screen show at once; without IntersectionObserver everything shows.
+ */
+export function useReveal(dep?: unknown) {
+  useEffect(() => {
+    const els = [...document.querySelectorAll<HTMLElement>(".dp-sec, .dp-cards > *, .dp-steps > *, .dp-table tbody tr, .ld-sec, .ld-steps > *, .ld-perms > *, .ld-close, .ld-how > *, .ld-sec-row")];
+    if (!("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    els.forEach((el, i) => {
+      el.classList.add("reveal");
+      el.style.setProperty("--d", `${(i % 4) * 60}ms`);
+      io.observe(el);
+    });
+    return () => io.disconnect();
+  }, [dep]);
+}
 
 export function SiteNav({ current }: { current?: "how-it-works" | "security" | "docs" }) {
   const link = (to: string, label: string) => (
     <a href={`#/${to}`} className={current === to ? "on" : undefined} aria-current={current === to ? "page" : undefined}>{label}</a>
   );
+  // A teal underline sits under the current page's link and slides between them.
+  const nav = useRef<HTMLElement>(null);
+  const [bar, setBar] = useState<{ left: number; width: number } | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  useLayoutEffect(() => {
+    const place = () => {
+      const el = nav.current?.querySelector<HTMLElement>("a.on");
+      setBar(el && el.offsetParent ? { left: el.offsetLeft, width: el.offsetWidth } : null);
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    if (nav.current) ro.observe(nav.current);
+    document.fonts?.ready.then(place).catch(() => {});
+    return () => ro.disconnect();
+  }, [current]);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 8);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
   return (
-    <nav className="ld-nav">
+    <nav className={`ld-nav${scrolled ? " scrolled" : ""}`} ref={nav}>
+      {bar && <span className="ld-nav-bar" aria-hidden="true" style={{ transform: `translateX(${bar.left}px)`, width: bar.width }} />}
       <a href="#/" className="display ld-logo">SLUICE</a>
       <span className="ld-spacer" />
       {link("how-it-works", "How it works")}
@@ -34,6 +76,7 @@ export function SiteFooter() {
 
 /** A long-form page: title, lead, then sections. */
 export function DocPage({ current, title, lead, children }: { current: "how-it-works" | "security" | "docs"; title: string; lead: string; children: ReactNode }) {
+  useReveal(current);
   return (
     <div className="ld">
       <SiteNav current={current} />

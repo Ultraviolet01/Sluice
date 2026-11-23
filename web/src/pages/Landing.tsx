@@ -8,7 +8,7 @@ import hull from "../assets/landing/hull.svg";
 import loadline from "../assets/landing/loadline-lg.svg";
 import waves from "../assets/landing/waves.svg";
 import "./landing.css";
-import { REPO, SiteFooter, SiteNav } from "./site.tsx";
+import { REPO, SiteFooter, SiteNav, useReveal } from "./site.tsx";
 
 
 
@@ -24,6 +24,7 @@ const KEY_PERMS = [
 ] as const;
 
 export default function Landing() {
+  useReveal("landing");
   const [over, setOver] = useState(false);
   const host = useRef<HTMLDivElement>(null);
   const harbor = useRef<{ setOver(o: boolean): void; dispose(): void } | null>(null);

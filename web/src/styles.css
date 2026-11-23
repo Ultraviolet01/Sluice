@@ -280,3 +280,20 @@ button { font: inherit; cursor: pointer; }
 .cs-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #2f9e6b; margin-right: 6px; vertical-align: middle; }
 .cs-disconnect { background: none; border: 0; padding: 2px 4px; color: inherit; text-decoration: underline; cursor: pointer; opacity: .8; }
 .cs-disconnect:hover { opacity: 1; }
+
+/* ---------- phones: a compact header instead of a tall sidebar ---------- */
+.st-keybox, .mono { overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .sidebar { padding: 14px 16px 10px; gap: 12px; }
+  .sidebar .brand { font-size: 20px; }
+  /* One swipeable row of pages; the current one stays in view. */
+  .nav { flex-wrap: nowrap; overflow-x: auto; gap: 4px; margin: 0 -16px; padding: 2px 16px 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { flex: 0 0 auto; height: 34px; scroll-snap-align: center; }
+  .nav a span.label { flex: none; }
+  /* The agent's status becomes one line with a small Pause button. */
+  .agent-status { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; }
+  .agent-status .checked { display: none; }
+  .agent-status .live { font-size: 13px; }
+  .agent-status button { padding: 6px 10px; font-size: 12px; flex-shrink: 0; }
+}

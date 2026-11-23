@@ -93,6 +93,7 @@ export function Sidebar({ route }: { route: string }) {
   const [ind, setInd] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   useLayoutEffect(() => {
     const el = navRef.current?.querySelector<HTMLElement>("a.active");
+    if (el && window.innerWidth <= 900) el.scrollIntoView({ block: "nearest", inline: "center" });
     const place = () => el && setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
     place();
     // Fonts and wrapping can move the item after the first paint: measure again then.

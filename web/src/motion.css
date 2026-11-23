@@ -112,3 +112,48 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px var(--accent-s
     transition-duration: 1ms !important; scroll-behavior: auto !important;
   }
 }
+
+/* ============================================ public pages (home, docs) */
+/* Each page rises in when it opens. */
+.ld-hero, .ld-intro, .dp-head { animation: rise-in var(--t-slow) var(--ease-out) both; }
+.dp-head p, .ld-hero p { animation: rise-in var(--t-slow) var(--ease-out) 80ms both; }
+.ld-ctas { animation: rise-in var(--t-slow) var(--ease-out) 140ms both; }
+
+/* Top bar: a shadow once the page scrolls, a sliding underline under the current page. */
+.ld-nav { position: sticky; transition: box-shadow var(--t-med) ease, background-color var(--t-med) ease; }
+.ld-nav.scrolled { box-shadow: 0 6px 20px rgba(15, 47, 58, .08); background: rgba(246, 248, 247, .92); backdrop-filter: saturate(1.2) blur(8px); }
+.ld-nav-bar {
+  position: absolute; left: 0; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent-sluice);
+  transition: transform var(--t-slow) var(--ease-spring), width var(--t-med) var(--ease-out);
+}
+.ld-nav > a:not(.ld-pill-outline):not(.ld-logo), .ld-foot a, .dp-code, .dp-toc a {
+  position: relative; transition: color var(--t-fast) ease;
+}
+.ld-nav > a:not(.ld-pill-outline):not(.ld-logo)::after, .ld-foot a::after, .dp-toc a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 1.5px; background: currentColor;
+  transform: scaleX(0); transform-origin: left; transition: transform var(--t-med) var(--ease-out); opacity: .6;
+}
+.ld-nav > a:not(.ld-pill-outline):not(.ld-logo):hover::after, .ld-foot a:hover::after, .dp-toc a:hover::after { transform: scaleX(1); }
+.ld-nav > a.on::after { display: none; }
+.ld-nav > a:hover, .ld-foot a:hover { color: var(--text-primary); }
+.ld-logo { transition: letter-spacing var(--t-med) var(--ease-out), opacity var(--t-fast) ease; }
+.ld-logo:hover { letter-spacing: 3px; }
+.ld-pill:hover { box-shadow: 0 8px 20px rgba(11, 92, 85, .28); }
+.ld-pill-outline:hover { background: var(--bg-surface); box-shadow: 0 6px 16px rgba(15, 47, 58, .10); }
+
+/* Scroll reveal (classes added by useReveal). */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity 520ms var(--ease-out) var(--d, 0ms), transform 520ms var(--ease-out) var(--d, 0ms); }
+.reveal.in { opacity: 1; transform: none; }
+tr.reveal { transform: none; transition: opacity 400ms ease var(--d, 0ms); }
+
+/* Cards, steps and code links respond. */
+.dp-cards > div, .dp-steps > *, .ld-steps > *, .ld-perms > *, .ld-sec-row {
+  transition: opacity 520ms var(--ease-out) var(--d, 0ms), transform 300ms var(--ease-out), box-shadow var(--t-med) ease, border-color var(--t-fast) ease;
+}
+.dp-cards > div.in:hover, .dp-steps > .in:hover, .ld-steps > .in:hover, .ld-perms > .in:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(15, 47, 58, .09); }
+.dp-code { display: inline-block; transition: color var(--t-fast) ease, transform var(--t-fast) var(--ease-out); }
+.dp-code:hover { transform: translateX(2px); }
+.dp-table tbody tr:hover { background: var(--bg-surface); }
+.dp-pre { transition: box-shadow var(--t-med) ease; }
+.dp-pre:hover { box-shadow: 0 8px 22px rgba(15, 47, 58, .10); }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
