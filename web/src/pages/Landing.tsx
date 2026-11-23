@@ -11,6 +11,12 @@ import "./landing.css";
 
 const REPO = "https://github.com/ultraviolet01/sluice";
 
+/** In-page links: scroll to the section without changing the app's hash route. */
+const jump = (id: string) => (e: { preventDefault(): void }) => {
+  e.preventDefault();
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
 const KEY_PERMS = [
   ["pay(bill, period)", "Allowed", "ok"],
   ["propose(bill, period)", "Allowed", "ok"],
@@ -52,8 +58,8 @@ export default function Landing() {
       <nav className="ld-nav">
         <span className="display ld-logo">SLUICE</span>
         <span className="ld-spacer" />
-        <a href="#how">How it works</a>
-        <a href="#security">Security</a>
+        <a href="#how" onClick={jump("how")}>How it works</a>
+        <a href="#security" onClick={jump("security")}>Security</a>
         <a href={`${REPO}#readme`} target="_blank" rel="noreferrer">Docs</a>
         <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>
         <a className="ld-pill-outline" href="#/app/overview">Open app</a>
