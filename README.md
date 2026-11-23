@@ -51,7 +51,20 @@ flowchart LR
 
 A bill that would break the cash buffer but isn't due yet is held until it is: money may come in first. Bills marked **critical** (payroll, rent) are paid first and never held. Each proposal's reason is written in plain English by Claude Haiku 5.5 from the agent's own facts.
 
-Anyone can **create their company's vault** from the dashboard in one signature (`SluiceFactory`), **import** up to 50 bills at once from a CSV or from several invoices, approve many payees in one signature, and **deposit** from the dashboard. A **Get started** checklist walks a new company through funding, payees, bills and hiring the agent.
+Anyone can **create their company's vault** from the dashboard in one signature (`SluiceFactory`), **import** up to 50 bills at once from a CSV or from several invoices (Claude Haiku 5.5 reads a PDF or photo into a draft bill the owner checks and signs), approve many payees in one signature, and **deposit** from the dashboard. A **Get started** checklist walks a new company through funding, payees, bills and hiring the agent. **Your companies** lists every company the wallet owns, including ones handed to it.
+
+**Telegram ([@Sluice1_bot](https://t.me/Sluice1_bot)).** The owner links a chat from Settings with one signature, and the agent's alerts for that company go only there: a bill waiting for approval (with Reject and Block payee buttons), a refused payment, a shortfall ahead, the agent's session about to end. `/balance`, `/bills` and `/pending` answer in the chat. If the owner turns on Telegram actions, the bot can also pause the vault, block a payee or reject a proposal: it is the vault's *guardian*, a key that can only make the vault stricter.
+
+**Reports.** *Export to Excel* on the Activity page downloads a treasury report for any period: Summary, Activity, Payments, Ledger (every tUSD8 in and out, named from the vault's own records), Rule changes (each with the owner's reason as written on chain) and Wallets, with explorer links.
+
+## Where it runs
+
+| Part | Where | What it does |
+|---|---|---|
+| Contracts | QDay Aevum Testnet | `SluiceFactory` creates each company's `SluiceVault`; the vault holds the tUSD8 and enforces every rule |
+| Dashboard and invoice reader | Vercel: https://usesluice.vercel.app | The owner's app; the invoice reader is a serverless function calling Claude Haiku 5.5 |
+| Agent | Railway, a scheduled job every 15 minutes | One round over every company that gave it a session; GitHub Actions can run a round by hand as a backup |
+| Telegram bot | Railway, always on | Sends nothing on its own: answers commands and acts as guardian when the owner allowed it |
 
 ## Guardrails (enforced on-chain)
 
@@ -69,7 +82,7 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 | Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
 | Receipts and reasons | `BillPaid`, `PaymentProposed`, `PaymentRejected`; every rule change (`PolicyChanged`, payees, sessions, cancelled bills) is logged with the owner's reason |
 
-24 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
+27 attacks with a stolen key (agent or bot), all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Check it
 
@@ -121,9 +134,11 @@ Demo data by default; add `?vault=0x…` to the address (`#/app/overview?vault=0
 | tUSD8 | `0x456569838f1d43009A91ebA4263147Afd7233483` (6 decimals: `1 tUSD8 = 1_000_000`) |
 | Faucet | https://faucet.qday.info/en |
 | Factory | [`0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9`](https://explorer-test.qday.info/address/0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9) |
-| Vault | [`0x15deBE3Bed0A0Bf705B6800d279f038097dc1706`](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706) |
+| Vault (deployed directly) | [`0x15deBE3Bed0A0Bf705B6800d279f038097dc1706`](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706) |
 | Demo company (Kora Supply Group) | [`0x4cd19a15A37Dc241938b9B0Bee67E007556554ce`](https://explorer-test.qday.info/address/0x4cd19a15A37Dc241938b9B0Bee67E007556554ce) |
+| Function-check company (every function, live) | [`0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3`](https://explorer-test.qday.info/address/0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3) |
 | Agent | `0x2ea4bf1d859918adf150F032F7E0C233f5498d3A` |
+| Telegram bot (guardian) | `0xc0940c4BAd322FBB09CB27ca0442e96f11C3AC29` |
 | Deployed at block | `3911562` |
 | Source | Verified on the explorer (`node scripts/verify-explorer.mjs` in `contracts/`) |
 
@@ -144,10 +159,10 @@ npm run deploy
 | Folder | What |
 |---|---|
 | `contracts/` | `SluiceVault.sol`, `SluiceFactory.sol`, tests and attack suite, deploy and local demo scripts (Hardhat) |
-| `bot/` | The Telegram bot (Railway): alerts to each founder, `/balance`, `/pending`, and pause / block / reject as the vault's guardian. See `bot/README.md` |
+| `bot/` | The Telegram bot (Railway): alerts to each founder, `/balance`, `/pending`, and pause / block / reject as the vault's guardian. See [bot/README.md](bot/README.md) |
 | `agent/` | The agent: observe, forecast, decide, review, act, learn. See [agent/README.md](agent/README.md) |
 | `web/` | Landing page, owner dashboard, and the invoice reader function. See [web/README.md](web/README.md) |
-| `docs/` | [Security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md), [backlog](docs/BACKLOG.md) |
+| `docs/` | [Proof on Aevum](docs/VERIFIED.md), [security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md), [backlog](docs/BACKLOG.md) |
 | `.github/workflows/` | `ci.yml` runs every check on each push; `agent.yml` runs one agent round by hand (the 15-minute schedule runs on Railway) |
 
 ## Known limits
@@ -157,13 +172,24 @@ npm run deploy
 - At most 32 agent payments per vault in 24 hours; beyond that, payments wait for the next window or the owner.
 - Testnet tokens have no value. Nothing here has moved real money.
 
-Roadmap to mainnet: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
+## Roadmap to mainnet
+
+1. **Per-payee caps** on chain.
+2. **Confirmation of Payee** through an ERC-8004 identity registry: a payee's address checked against its registered identity before the first payment.
+3. **Multisig owner** (a Safe), so approvals take more than one signature.
+4. **Gas paid in tUSD8** through an ERC-4337 paymaster, if Aevum runs a bundler.
+5. **Paying a payee on another chain** through the QDay Bridge, once its contracts and tokens are published (today it links only QDay Origin testnet and Aevum testnet). The vault's limits and the owner's approval still apply before anything leaves Aevum.
+6. **Earning on idle cash** through QDay's lending protocol (QLEAP) once it is live on Aevum: only money above the buffer and the next 14 days of bills, up to an owner-set cap.
+7. **An audit** before any mainnet money.
+
+Details: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
 
 ## Dependencies
 
 - OpenZeppelin Contracts 5.1, Hardhat, ethers v6, chai (MIT) for the contract
 - viem, @anthropic-ai/sdk, tsx (MIT) for the agent
-- React 18, Vite 5, viem (MIT) for the dashboard; Fraunces, Hanken Grotesk and Geist Mono from Google Fonts (OFL)
+- tsx, viem (MIT) for the Telegram bot
+- React 18, Vite 5, viem, ExcelJS, three.js (MIT) for the dashboard; Fraunces, Hanken Grotesk and Geist Mono from Google Fonts (OFL)
 
 ## License
 

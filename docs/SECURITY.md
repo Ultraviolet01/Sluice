@@ -41,7 +41,7 @@ Ownership moves in two steps (offer, then accept) through OpenZeppelin's `Ownabl
 
 ## If the agent's key is stolen
 
-`contracts/test/attacks.test.js` signs as the agent and tries 24 attacks. All are refused:
+`contracts/test/attacks.test.js` signs as the agent (and, for the guardian checks, as the Telegram bot) and tries 27 attacks. All are refused:
 
 | The thief tries to | The vault answers |
 |---|---|

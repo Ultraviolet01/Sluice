@@ -92,7 +92,7 @@ export default function Docs() {
       <Sec id="Check it" title="Check it">
         <ul className="dp-list">
           <li><b>Contract and attacks:</b> <code>cd contracts && npx hardhat test</code>, 54 tests, including the factory, 24 stolen-key attacks and randomised operation sequences.</li>
-          <li><b>Agent:</b> <code>cd agent && npm test</code>, 42 tests: decisions, holding bills, the injection guard, the review, alerts, whole rounds against a fake vault, and 2,000-case randomised checks.</li>
+          <li><b>Agent:</b> <code>cd agent && npm test</code>, 44 tests: decisions, holding bills, the injection guard, the review, alerts, whole rounds against a fake vault, and 2,000-case randomised checks.</li>
           <li><b>End to end on a local chain:</b> the steps in the <a href={`${REPO}#see-the-agent-work-locally`} target="_blank" rel="noreferrer">README</a>, which deploy a demo company and run a real round.</li>
         </ul>
       </Sec>
