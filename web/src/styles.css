@@ -267,3 +267,11 @@ button { font: inherit; cursor: pointer; }
 .own-form { display: flex; flex-direction: column; }
 .own-banner { display: flex; align-items: center; gap: 12px; background: var(--accent-brass-tint); color: var(--text-primary); }
 .own-banner .grow { flex: 1; }
+.tg { display: flex; flex-direction: column; gap: 12px; }
+.tg-confirm { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 10px; background: var(--accent-brass-tint); }
+.tg-confirm .grow { display: flex; flex-direction: column; gap: 4px; }
+.tg-steps { display: flex; flex-direction: column; }
+.tg-step { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border-default); }
+.tg-step .grow { display: flex; flex-direction: column; gap: 3px; }
+.gs-dot.on { background: var(--status-success); border-color: var(--status-success); color: #fff; }
+.tg-step .gs-dot { color: var(--text-secondary); }

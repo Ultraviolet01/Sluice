@@ -14,7 +14,9 @@
 //   SLUICE_APP_URL       optional, the dashboard's address, linked from alerts
 //   SLUICE_ALERT_STATE   optional, file remembering alerts already sent (default .sluice-alerts.json)
 //   SLUICE_MIN_GAS       optional, alert the operator when the agent's tQDAY falls below this (default 0.2)
-//   OPERATOR_TELEGRAM_CHAT_ID  optional, where operator alerts (agent gas, crashes) go; default TELEGRAM_CHAT_ID
+//   OPERATOR_TELEGRAM_CHAT_ID  optional, the operator's chat (agent gas, crashes); default TELEGRAM_CHAT_ID
+// A company's own alerts go to the chat its owner linked on the vault (Settings -> Telegram),
+// never to the operator. A vault with no linked chat gets no Telegram alerts.
 // Flags: --dry-run decides everything and signs nothing.
 
 import { appendFileSync } from "node:fs";
@@ -24,7 +26,7 @@ import { aevumTestnet, viemChain } from "./chain.ts";
 import { runVault, type Event } from "./loop.ts";
 import { makeReviewer } from "./review.ts";
 import { explain } from "./explain.ts";
-import { LOW_GAS, format, fresh, gasAlert, loadSent, saveSent, send, type Alert } from "./notify.ts";
+import { LOW_GAS, billButtons, format, fresh, gasAlert, loadSent, saveSent, send, type Alert } from "./notify.ts";
 
 const EXPLORER = process.env.SLUICE_LOCAL === "1" ? "" : "https://explorer-test.qday.info";
 
@@ -55,9 +57,10 @@ async function main() {
   const reviewer = makeReviewer(process.env.ANTHROPIC_API_KEY);
   const found = factory ? await chain.discover(factory as Address).catch((e) => {
     console.error(`[error] reading the factory: ${(e as Error).message}`);
-    return [] as Address[];
+    return [] as { vault: Address; index: number }[];
   }) : [];
-  const vaults = [...new Map([...listed, ...found].map((v) => [v.toLowerCase(), v])).values()];
+  const indexOf = new Map(found.map((f) => [f.vault.toLowerCase(), f.index]));
+  const vaults = [...new Map([...listed, ...found.map((f) => f.vault)].map((v) => [v.toLowerCase(), v])).values()];
   if (factory) console.log(`Factory ${factory}: ${found.length} vault(s) gave this agent a live session`);
   console.log(`Sluice agent ${chain.agent}${dryRun ? " (dry run: signs nothing)" : ""}; Claude review ${process.env.ANTHROPIC_API_KEY ? "on" : "off"}`);
 
@@ -116,11 +119,25 @@ async function main() {
     const { todo, sent: kept } = fresh(alerts, sent);
     sent = kept;
     if (todo.length) {
-      const app = process.env.SLUICE_APP_URL ? `${process.env.SLUICE_APP_URL.replace(/\/$/, "")}/#/app/approvals?vault=${vault}` : undefined;
-      const text = format(`${vault.slice(0, 6)}…${vault.slice(-4)}`, todo.map((a) => ({ ...a, link: a.link && EXPLORER ? `${EXPLORER}/tx/${a.link}` : undefined })), app);
-      if (dryRun || !tg) console.log(`[alert] ${todo.length} new${tg ? " (dry run: not sent)" : " (Telegram not set up)"}:\n${todo.map((a) => `  - ${a.text}`).join("\n")}`);
-      else if (await send(tg, text)) for (const a of todo) sent[a.key] = Date.now();
-      else console.error("[alert] Telegram send failed");
+      // The founder's own chat, from the vault; the operator never receives a company's alerts.
+      const chat = await chain.notifyChat(vault as Address);
+      const appUrl = process.env.SLUICE_APP_URL;
+      const label = `${vault.slice(0, 6)}…${vault.slice(-4)}`;
+      const explorer = (a: Alert) => ({ ...a, link: a.link && EXPLORER ? `${EXPLORER}/tx/${a.link}` : undefined });
+      const plain = todo.filter((a) => !a.bill);
+      const bills = todo.filter((a) => a.bill);
+      if (dryRun || !tg || !chat) {
+        console.log(`[alert] ${todo.length} new${!tg ? " (Telegram not set up)" : !chat ? " (no chat linked on this vault)" : " (dry run: not sent)"}:\n${todo.map((a) => `  - ${a.text}`).join("\n")}`);
+      } else {
+        const to = { ...tg, chatId: chat };
+        const app = appUrl ? `${appUrl.replace(/\/$/, "")}/#/app/overview?vault=${vault}` : undefined;
+        if (plain.length && (await send(to, format(label, plain.map(explorer), app)))) for (const a of plain) sent[a.key] = Date.now();
+        // One message per waiting payment, so its buttons act on that payment.
+        for (const a of bills) {
+          if (await send(to, format(label, [explorer(a)]), fetch, billButtons(appUrl, vault, indexOf.get(vault.toLowerCase()), a.bill!))) sent[a.key] = Date.now();
+          else console.error("[alert] Telegram send failed");
+        }
+      }
     }
   }
   if (!dryRun) saveSent(stateFile, sent);

@@ -12,6 +12,14 @@ export interface Alert {
   key: string;
   text: string;
   link?: string;
+  /** A payment waiting for the owner: shown with Approve and Reject buttons. */
+  bill?: { id: number; period: number };
+}
+
+export interface Button {
+  text: string;
+  url?: string;
+  callback_data?: string;
 }
 
 /** Sent keys with the time sent; forgotten after `keepDays`, so a lasting problem is repeated weekly. */
@@ -59,12 +67,12 @@ export interface Telegram {
   chatId: string;
 }
 
-export async function send(tg: Telegram, text: string, fetcher: typeof fetch = fetch): Promise<boolean> {
+export async function send(tg: Telegram, text: string, fetcher: typeof fetch = fetch, buttons?: Button[][]): Promise<boolean> {
   try {
     const r = await fetcher(`https://api.telegram.org/bot${tg.token}/sendMessage`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: tg.chatId, text, parse_mode: "HTML", disable_web_page_preview: true }),
+      body: JSON.stringify({ chat_id: tg.chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(buttons ? { reply_markup: { inline_keyboard: buttons } } : {}) }),
     });
     return r.ok;
   } catch {
@@ -83,4 +91,15 @@ export function gasAlert(agent: string, balance: bigint, min = LOW_GAS, day = ne
     ? `The agent ${agent} has no tQDAY left for gas, so it cannot pay or propose anything. Send it tQDAY now.`
     : `The agent ${agent} is low on gas: ${shown} tQDAY left. Top it up soon, or it will stop paying bills.`;
   return { key: `lowgas:${agent}:${day}`, text };
+}
+
+/**
+ * Approve (opens Sluice to sign) and Reject (the bot rejects as the vault's guardian)
+ * under a payment that waits for the owner. The bot reads "rj:<factory index>:<bill>:<period>".
+ */
+export function billButtons(appUrl: string | undefined, vault: string, factoryIndex: number | undefined, bill: { id: number; period: number }): Button[][] | undefined {
+  const row: Button[] = [];
+  if (appUrl) row.push({ text: "Approve in Sluice", url: `${appUrl.replace(/\/$/, "")}/#/app/approvals?vault=${vault}&bill=${bill.id}&period=${bill.period}` });
+  if (factoryIndex !== undefined) row.push({ text: "Reject", callback_data: `rj:${factoryIndex}:${bill.id}:${bill.period}` });
+  return row.length ? [row] : undefined;
 }

@@ -7,6 +7,7 @@ import { fmt, toUnits } from "../model.ts";
 import { useApp } from "../state.tsx";
 import "./settings.css";
 import { OwnerCard } from "./Ownership.tsx";
+import { TelegramCard } from "./TelegramCard.tsx";
 
 export default function Settings() {
   const { model: m, act, busy } = useApp();
@@ -74,6 +75,8 @@ export default function Settings() {
           <p className="muted small" style={{ marginTop: 10 }}>It needs a little tQDAY for gas at its own address.</p>
         </section>
       </div>
+
+      <TelegramCard />
 
       <OwnerCard />
 

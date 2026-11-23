@@ -29,6 +29,12 @@ export const VAULT_ABI = parseAbi([
   "function isAllowedPayee(address) view returns (bool)",
   "function agent() view returns (address)",
   "function pendingOwner() view returns (address)",
+  "function guardian() view returns (address)",
+  "function notifyChat() view returns (string)",
+  "function setGuardian(address guardian, string reason)",
+  "function setNotifyChat(string chat)",
+  "event GuardianSet(address indexed guardian, string reason)",
+  "event NotifyChatSet(string chat)",
   "function releaseBill(uint256 billId, uint32 period)",
   "function transferOwnership(address newOwner)",
   "function acceptOwnership()",
@@ -80,6 +86,9 @@ export interface BillInput {
 }
 
 export const FACTORY = (import.meta.env.VITE_FACTORY_ADDRESS || "") as Address | "";
+/** The Telegram bot's username (no @) and its guardian address, if this site runs one. */
+export const TELEGRAM_BOT = (import.meta.env.VITE_TELEGRAM_BOT || "") as string;
+export const BOT_GUARDIAN = (import.meta.env.VITE_BOT_GUARDIAN || "") as Address | "";
 /** The hosted Sluice agent's address, offered when the owner grants a session. */
 export const HOSTED_AGENT = (import.meta.env.VITE_AGENT_ADDRESS || "") as Address | "";
 
@@ -194,7 +203,9 @@ export type OwnerCall =
   | { fn: "revokeSession"; args: [Address, string] }
   | { fn: "withdraw"; args: [Address, bigint] }
   | { fn: "releaseBill"; args: [bigint, number] }
-  | { fn: "transferOwnership"; args: [Address] };
+  | { fn: "transferOwnership"; args: [Address] }
+  | { fn: "setGuardian"; args: [Address, string] }
+  | { fn: "setNotifyChat"; args: [string] };
 
 /** The offered new owner accepts the vault (Ownable2Step's second step). Signed by them, not the owner. */
 export async function acceptOwnership(vault: Address, account: Address): Promise<Hex> {

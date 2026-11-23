@@ -27,6 +27,7 @@ function fakeChain(bills: Bill[], extra: Partial<VaultView> = {}) {
     agent: "0x00000000000000000000000000000000000000ee",
     discover: async () => [],
     gas: async () => 10n ** 18n,
+    notifyChat: async () => "",
     now: async () => NOW,
     read: async () => view,
     status: async (_v, id, p) => status.get(`${id}:${p}`) ?? 0,

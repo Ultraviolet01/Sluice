@@ -117,6 +117,13 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice The vault's one current agent. Granting a session to another
     ///         address revokes this one, so a rotated key stops working at once.
     address public agent;
+    /// @notice Optional second key the owner trusts to make the vault stricter, never
+    ///         looser: pause, block a payee, reject a proposal. Used by the Telegram bot,
+    ///         so a founder can stop a scam from their phone in one tap. It can never
+    ///         unpause, unblock, approve, allow a payee, change a limit or move money.
+    address public guardian;
+    /// @notice Where the agent sends this vault's alerts (a Telegram chat id), set by the owner.
+    string public notifyChat;
     mapping(address agent => Spend[SLOTS]) private _spends;
     mapping(address agent => uint256) private _spendHead;
 
@@ -150,12 +157,15 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     event PaymentProposed(uint256 indexed billId, uint32 indexed period, address indexed agent, uint256 amount, Reason reason, string note);
     event PaymentRejected(uint256 indexed billId, uint32 indexed period);
     event Withdrawn(address indexed to, uint256 amount);
+    event GuardianSet(address indexed guardian, string reason);
+    event NotifyChatSet(string chat);
 
     // --------------------------------------------------------------- errors
 
     error Refused(Reason reason);
     error NotAgentPayable(Reason reason);
     error NotPending();
+    error NotOwnerOrGuardian();
     error ZeroAddress();
     error InvalidSession();
     error InvalidBill();
@@ -307,15 +317,35 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
         emit BillPaid(billId, period, b.payee, b.amount, p.agent, true);
     }
 
-    function reject(uint256 billId, uint32 period) external onlyOwner {
+    function reject(uint256 billId, uint32 period) external onlyOwnerOrGuardian {
         Proposal storage p = settlements[billId][period];
         if (p.status != Status.Pending) revert NotPending();
         p.status = Status.Rejected;
         emit PaymentRejected(billId, period);
     }
 
-    function pause() external onlyOwner {
+    function pause() external onlyOwnerOrGuardian {
         _pause();
+    }
+
+    /// @notice Lets a guardian (or no one, with address(0)) make the vault stricter. See `guardian`.
+    function setGuardian(address newGuardian, string calldata reason) external onlyOwner {
+        _checkReason(reason);
+        guardian = newGuardian;
+        emit GuardianSet(newGuardian, reason);
+    }
+
+    /// @notice A guardian may block a payee, never unblock one: blocking only ever stops payments.
+    function guardianBlock(address payee, string calldata reason) external onlyOwnerOrGuardian {
+        _checkReason(reason);
+        _setBlocked(payee, true, reason);
+    }
+
+    /// @notice The chat the agent sends this vault's alerts to; empty to stop them.
+    function setNotifyChat(string calldata chat) external onlyOwner {
+        if (bytes(chat).length > 64) revert TooLong();
+        notifyChat = chat;
+        emit NotifyChatSet(chat);
     }
 
     function unpause() external onlyOwner {
@@ -414,6 +444,11 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     }
 
     // ============================================================= internal
+
+    modifier onlyOwnerOrGuardian() {
+        if (msg.sender != owner() && (msg.sender != guardian || guardian == address(0))) revert NotOwnerOrGuardian();
+        _;
+    }
 
     function _checkReason(string calldata reason) internal pure {
         if (bytes(reason).length > MAX_NOTE) revert TooLong();

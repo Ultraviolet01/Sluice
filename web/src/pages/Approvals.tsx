@@ -39,7 +39,12 @@ export default function Approvals() {
   const { model: m, act, busy, isOwner } = useApp();
   const [tab, setTab] = useState<"waiting" | "decided">("waiting");
   const [q, setQ] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  // From a Telegram alert's "Approve in Sluice": open that payment.
+  const [selected, setSelected] = useState<string | null>(() => {
+    const q = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+    const b = q.get("bill"), p = q.get("period");
+    return b !== null && p !== null && /^\d+$/.test(b) && /^\d+$/.test(p) ? `${b}:${p}` : null;
+  });
   if (!m) return null;
 
   const match = (a: ApprovalRow) => !q || `${a.label} ${a.payee}`.toLowerCase().includes(q.toLowerCase());

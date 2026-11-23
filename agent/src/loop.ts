@@ -132,7 +132,7 @@ export async function runVault(chain: Chain, vault: Address, o: RoundOptions): P
     }
     const tx = await act(chain, vault, bill, period, action.kind, note, o.dryRun, say);
     if (action.kind === "propose" && (tx || o.dryRun)) {
-      alert({ key: `proposed:${vault}:${bill.id}:${period}`, text: `Needs you: ${clean(bill.label)}, ${m(bill.amount)}. ${note}`, link: tx });
+      alert({ key: `proposed:${vault}:${bill.id}:${period}`, text: `Needs you: ${clean(bill.label)}, ${m(bill.amount)}. ${note}`, link: tx, bill: { id: bill.id, period } });
     }
   }
 

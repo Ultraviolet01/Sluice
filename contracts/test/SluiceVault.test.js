@@ -205,6 +205,35 @@ describe("SluiceVault", () => {
       expect(await vault.agent()).to.equal(ethers.ZeroAddress);
     });
 
+    it("a guardian can pause, block a payee and reject a proposal: never loosen anything", async () => {
+      const { vault, agent, payee, stranger } = await loadFixture(deploy);
+      const g = stranger;
+      await expect(vault.connect(g).pause()).to.be.revertedWithCustomError(vault, "NotOwnerOrGuardian");
+      await expect(vault.setGuardian(g.address, "Telegram bot")).to.emit(vault, "GuardianSet").withArgs(g.address, "Telegram bot");
+      await vault.connect(agent).propose(2, 0, "over cap");
+      await expect(vault.connect(g).reject(2, 0)).to.emit(vault, "PaymentRejected");
+      await expect(vault.connect(g).guardianBlock(payee.address, "Reported in Telegram")).to.emit(vault, "PayeeBlocked").withArgs(payee.address, true, "Reported in Telegram");
+      await expect(vault.connect(g).pause()).to.emit(vault, "Paused");
+      // Never the other way:
+      await expect(vault.connect(g).unpause()).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      await expect(vault.connect(g).setPayeeBlocked(payee.address, false, "x")).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      await expect(vault.connect(g).approve(2, 0)).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      await expect(vault.connect(g).withdraw(g.address, 1)).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      await expect(vault.connect(g).setGuardian(g.address, "x")).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      // The owner can remove it at once.
+      await vault.unpause();
+      await vault.setGuardian(ethers.ZeroAddress, "Lost phone");
+      await expect(vault.connect(g).pause()).to.be.revertedWithCustomError(vault, "NotOwnerOrGuardian");
+    });
+
+    it("stores the owner's alert chat; only the owner can set it", async () => {
+      const { vault, stranger } = await loadFixture(deploy);
+      await expect(vault.setNotifyChat("123456789")).to.emit(vault, "NotifyChatSet").withArgs("123456789");
+      expect(await vault.notifyChat()).to.equal("123456789");
+      await expect(vault.connect(stranger).setNotifyChat("666")).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      await expect(vault.setNotifyChat("x".repeat(65))).to.be.revertedWithCustomError(vault, "TooLong");
+    });
+
     it("logs every policy change with old and new values", async () => {
       const { vault } = await loadFixture(deploy);
       await expect(vault.setCashBuffer(usd(250), "Payroll grew; keep a month in hand"))

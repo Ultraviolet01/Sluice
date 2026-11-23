@@ -29,6 +29,7 @@ export const VAULT_ABI = parseAbi([
   "function checkPayment(address, uint256, uint32) view returns (uint8, uint8)",
   "function isAllowedPayee(address) view returns (bool)",
   "function agent() view returns (address)",
+  "function notifyChat() view returns (string)",
   "function pay(uint256 billId, uint32 period)",
   "function propose(uint256 billId, uint32 period, string note)",
 ]);
@@ -74,7 +75,9 @@ export interface Chain {
   /** The agent's own gas balance (tQDAY, 18 decimals): it pays every transaction it sends. */
   gas(): Promise<bigint>;
   /** Vaults from the factory whose current agent is this key, with a live session. */
-  discover(factory: Address): Promise<Address[]>;
+  discover(factory: Address): Promise<{ vault: Address; index: number }[]>;
+  /** The chat the vault's owner linked for alerts ("" if none). */
+  notifyChat(vault: Address): Promise<string>;
   now(): Promise<number>;
   read(vault: Address): Promise<VaultView>;
   check(vault: Address, billId: number, period: number): Promise<{ band: Band; reason: Reason }>;
@@ -104,16 +107,17 @@ export function viemChain(opts: { rpcUrl: string; privateKey: Hex; fromBlock?: b
   return {
     agent: account.address,
     gas: () => pub.getBalance({ address: account.address }),
+    notifyChat: (vault) => read<string>(vault, "notifyChat").catch(() => ""),
     async discover(factory) {
       const n = Number(await pub.readContract({ address: factory, abi: FACTORY_ABI, functionName: "vaultCount" }));
       const now = Math.floor(Date.now() / 1000);
-      const mine: Address[] = [];
+      const mine: { vault: Address; index: number }[] = [];
       for (let i = 0; i < n; i++) {
         const vault = (await pub.readContract({ address: factory, abi: FACTORY_ABI, functionName: "vaultAt", args: [BigInt(i)] })) as Address;
         const current = await read<Address>(vault, "agent");
         if (current.toLowerCase() !== account.address.toLowerCase()) continue;
         const s = await read<readonly [bigint, bigint, bigint, boolean]>(vault, "sessions", [account.address]);
-        if (s[3] && Number(s[2]) > now) mine.push(vault);
+        if (s[3] && Number(s[2]) > now) mine.push({ vault, index: i });
       }
       return mine;
     },

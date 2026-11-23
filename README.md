@@ -42,6 +42,7 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 | Once per period | Each bill period settles at most once, and never more than 3 days early |
 | Scoped session | The agent gets a per-payment cap, a rolling 24h cap and an expiry (`grantSession`) |
 | Instant stop | `revokeSession(agent)`; `pause()` halts every agent payment; granting a new agent revokes the old key |
+| Guardian | Optional second key (the Telegram bot) that can only make a vault stricter: pause, block a payee, reject a proposal. Never unpause, unblock, approve, change a limit or move money |
 | Ownership | Two-step hand-over to a new wallet or a Safe: the owner offers, the new owner accepts, and the owner can cancel before then |
 | Payees | New payees need the owner; the blocklist always wins, even on owner approval |
 | Human approval | Bills outside the limits are proposed with a note and wait for `approve` or `reject` |
@@ -59,7 +60,7 @@ You need Node.js 22.
 npm run verify
 ```
 
-One line per check, ending `VERIFY PASSED: 6 passed, 0 failed`: 54 contract tests (vault, factory, the attack suite and randomised runs), the agent's typecheck and 42 tests (including 2,000-case randomised checks), the web tests, and the web build.
+One line per check, ending `VERIFY PASSED: 7 passed, 0 failed`: 59 contract tests (vault, factory, the attack suite and randomised runs), the agent's typecheck and 44 tests (including 2,000-case randomised checks), the bot's tests, the web tests, and the web build.
 
 ### See the agent work, locally
 
@@ -119,6 +120,7 @@ npm run deploy
 | Folder | What |
 |---|---|
 | `contracts/` | `SluiceVault.sol`, `SluiceFactory.sol`, tests and attack suite, deploy and local demo scripts (Hardhat) |
+| `bot/` | The Telegram bot (Railway): alerts to each founder, `/balance`, `/pending`, and pause / block / reject as the vault's guardian. See `bot/README.md` |
 | `agent/` | The agent: observe, forecast, decide, review, act, learn. See [agent/README.md](agent/README.md) |
 | `web/` | Landing page, owner dashboard, and the invoice reader function. See [web/README.md](web/README.md) |
 | `docs/` | [Security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md), [backlog](docs/BACKLOG.md) |

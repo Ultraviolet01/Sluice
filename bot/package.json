@@ -1,0 +1,24 @@
+{
+  "name": "sluice-bot",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Sluice's Telegram bot: alerts to the right founder, read commands, and guardian actions that only make a vault stricter",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "test": "tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "tsx": "^4.19.2",
+    "viem": "^2.21.54"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.6.3"
+  }
+}

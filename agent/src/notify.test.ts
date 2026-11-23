@@ -60,3 +60,13 @@ test("low gas: alert below the line, once per day, and say plainly when it is em
   assert.equal(low.key, "lowgas:0xA:2026-12-01");
   assert.match(gasAlert("0xA", 0n)!.text, /no tQDAY left/);
 });
+
+test("a waiting payment gets Approve (sign in Sluice) and Reject (the bot, as guardian) buttons", async () => {
+  const { billButtons } = await import("./notify.ts");
+  const [row] = billButtons("https://sluice.example/", "0xV", 3, { id: 7, period: 2 })!;
+  assert.equal(row[0].url, "https://sluice.example/#/app/approvals?vault=0xV&bill=7&period=2");
+  assert.equal(row[1].callback_data, "rj:3:7:2");
+  // A vault outside the factory has no index: Approve only.
+  assert.equal(billButtons("https://x", "0xV", undefined, { id: 1, period: 0 })![0].length, 1);
+  assert.equal(billButtons(undefined, "0xV", undefined, { id: 1, period: 0 }), undefined);
+});

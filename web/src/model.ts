@@ -58,6 +58,10 @@ export interface Model {
   owner: Address | null;
   /** Offered new owner who has not accepted yet (two-step transfer), or null. */
   pendingOwner: Address | null;
+  /** The key allowed to make the vault stricter (the Telegram bot), or null. */
+  guardian: Address | null;
+  /** The Telegram chat the owner linked for alerts, or "". */
+  notifyChat: string;
   paused: boolean;
   balance: bigint;
   cashBuffer: bigint;
@@ -79,7 +83,9 @@ const why = (reason: unknown, fallback: string) => (typeof reason === "string" &
 export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   const read = <T,>(functionName: string, args: unknown[] = []) =>
     publicClient.readContract({ address: vault, abi: VAULT_ABI, functionName: functionName as never, args: args as never }) as Promise<T>;
-  const [token, owner, pendingRaw, paused, balance, cashBuffer, threshold, count, block] = await Promise.all([
+  const [guardianRaw, notifyChat, token, owner, pendingRaw, paused, balance, cashBuffer, threshold, count, block] = await Promise.all([
+    read<Address>("guardian"),
+    read<string>("notifyChat"),
     read<Address>("token"),
     read<Address>("owner"),
     read<Address>("pendingOwner"), read<boolean>("paused"), read<bigint>("balance"), read<bigint>("cashBuffer"),
@@ -177,6 +183,11 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
       activity.push({ at: e.at, what: `Cancelled bill: ${label(Number(a.billId))}`, amount: null, sign: "none", kind: "neutral", outcome: "Signed by you", rule: why(a.reason, "cancelBill"), tx: e.tx, type: "rules" });
     } else if (e.name === "Paused" || e.name === "Unpaused") {
       activity.push({ at: e.at, what: e.name === "Paused" ? "All payments paused" : "Payments resumed", amount: null, sign: "none", kind: e.name === "Paused" ? "blocked" : "settled", outcome: "Signed by you", rule: e.name === "Paused" ? "pause" : "unpause", tx: e.tx, type: "rules" });
+    } else if (e.name === "GuardianSet") {
+      const off = String(a.guardian) === "0x0000000000000000000000000000000000000000";
+      activity.push({ at: e.at, what: off ? "Telegram actions turned off" : "Telegram actions turned on (pause, block, reject)", amount: null, sign: "none", kind: off ? "neutral" : "settled", outcome: "Signed by you", rule: why(a.reason, "setGuardian"), tx: e.tx, type: "rules" });
+    } else if (e.name === "NotifyChatSet") {
+      activity.push({ at: e.at, what: String(a.chat) ? "Telegram alerts linked" : "Telegram alerts unlinked", amount: null, sign: "none", kind: "neutral", outcome: "Signed by you", rule: "setNotifyChat", tx: e.tx, type: "rules" });
     } else if (e.name === "BillReleased") {
       activity.push({ at: e.at, what: `Released ${label(Number(a.billId))}, payment ${Number(a.period) + 1}`, amount: null, sign: "none", kind: "neutral", outcome: "Signed by you", rule: "Can be paid again", tx: e.tx, type: "rules" });
     } else if (e.name === "OwnershipTransferStarted") {
@@ -228,6 +239,8 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
     name: (await companyName(vault)) || import.meta.env.VITE_COMPANY_NAME || "Your company",
     vault, token, owner, paused,
     pendingOwner: pendingRaw === "0x0000000000000000000000000000000000000000" ? null : pendingRaw,
+    guardian: guardianRaw === "0x0000000000000000000000000000000000000000" ? null : guardianRaw,
+    notifyChat,
     balance, cashBuffer, threshold, session, bills, upcoming, forecast,
     approvals: [...latest.values()].sort((a, b) => b.createdAt - a.createdAt),
     activity,

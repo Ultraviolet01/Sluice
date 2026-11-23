@@ -25,18 +25,19 @@ const map = (n) => {
   return n;
 };
 
+// Run once per contract change, against the commit before it (default HEAD). Writes nothing unless every link maps.
 let md = readFileSync("docs/SECURITY.md", "utf8");
 md = md.replace(/(SluiceVault\.sol#L)(\d+)/g, (_, a, n) => a + map(Number(n)));
 md = md.replace(/\[L(\d+)\]\(/g, (_, n) => `[L${map(Number(n))}](`);
-writeFileSync("docs/SECURITY.md", md);
+const mdOut = md;
 
 let page = readFileSync("web/src/pages/SecurityPage.tsx", "utf8");
 const a = page.indexOf("const WHO"), b = page.indexOf("const ATTACKS");
 page = page.slice(0, a) + page.slice(a, b).replace(/(", )(\d+)\]/g, (_, p, n) => `${p}${map(Number(n))}]`) + page.slice(b);
-writeFileSync("web/src/pages/SecurityPage.tsx", page);
-
 if (missing.length) {
-  console.error("Could not place:\n" + missing.join("\n"));
+  console.error("Could not place (nothing written; were the links already updated?):\n" + missing.join("\n"));
   process.exit(1);
 }
+writeFileSync("docs/SECURITY.md", mdOut);
+writeFileSync("web/src/pages/SecurityPage.tsx", page);
 console.log("docs line links updated");

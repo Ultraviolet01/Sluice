@@ -11,9 +11,11 @@ run() {
 [ -d contracts/node_modules ] || (cd contracts && npm ci --legacy-peer-deps >/dev/null)
 [ -d agent/node_modules ] || (cd agent && npm ci >/dev/null)
 [ -d web/node_modules ] || (cd web && npm ci >/dev/null)
+[ -d bot/node_modules ] || (cd bot && npm ci >/dev/null)
 run "contract tests (vault + stolen-key attacks)" bash -c "cd contracts && npx hardhat test"
 run "agent typecheck" bash -c "cd agent && npm run typecheck"
 run "agent tests" bash -c "cd agent && npm test"
+run "bot typecheck and tests (linking, guardian actions)" bash -c "cd bot && npm run typecheck && npm test"
 run "web tests (invoice reader, bill import)" bash -c "cd web && npm test"
 run "web typecheck and build" bash -c "cd web && npm run build"
 run "docs line links match the contract" node scripts/check-links.mjs

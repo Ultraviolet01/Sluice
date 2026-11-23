@@ -27,6 +27,8 @@ describe("Attacks with a stolen agent key", () => {
     ["allowlist its own address", (v, a, t) => v.connect(a).setPayeeAllowed(t.address, true, "test")],
     ["bulk-allowlist addresses it controls", (v, a, t) => v.connect(a).setPayeesAllowed([a.address, t.address], true, "x")],
     ["bulk-unblock payees", (v, a, t) => v.connect(a).setPayeesBlocked([t.address], false, "x")],
+    ["make itself the guardian", (v, a) => v.connect(a).setGuardian(a.address, "x")],
+    ["point the owner's alerts at its own chat", (v, a) => v.connect(a).setNotifyChat("666")],
     ["unblock a payee", (v, a, t) => v.connect(a).setPayeeBlocked(t.address, false, "test")],
     ["list a bill to itself", (v, a, t) => v.connect(a).addBill(t.address, usd(1000), 1, 0, false, "x")],
     ["bulk-list bills to itself", (v, a, t) => v.connect(a).addBills([{ payee: t.address, amount: usd(1000), firstDue: 1, intervalDays: 0, critical: true, label: "x" }])],
@@ -95,6 +97,30 @@ describe("Attacks with a stolen agent key", () => {
     await vault.grantSession(thief.address, usd(500), usd(600), (await time.latest()) + DAY, "test"); // owner rotates to a new key
     await expect(vault.connect(agent).pay(0, 0)).to.be.reverted;
     await expect(vault.connect(agent).propose(1, 0, "x")).to.be.reverted;
+  });
+
+  it("a stolen guardian key can only make things stricter, and can't touch the money", async () => {
+    const { vault, token, owner, agent, payee, thief } = await loadFixture(deploy);
+    await vault.setGuardian(thief.address, "bot");
+    const before = await token.balanceOf(await vault.getAddress());
+    for (const call of [
+      () => vault.connect(thief).unpause(),
+      () => vault.connect(thief).setPayeeAllowed(thief.address, true, "x"),
+      () => vault.connect(thief).setPayeeBlocked(payee.address, false, "x"),
+      () => vault.connect(thief).approve(1, 0),
+      () => vault.connect(thief).withdraw(thief.address, 1),
+      () => vault.connect(thief).grantSession(thief.address, 1, 1, 9_999_999_999, "x"),
+      () => vault.connect(thief).addBill(thief.address, 1, 1, 0, false, "x"),
+      () => vault.connect(thief).pay(0, 0),
+    ]) await expect(call()).to.be.reverted;
+    expect(await token.balanceOf(await vault.getAddress())).to.equal(before);
+    // Its worst: pause and block. The owner undoes both and removes it.
+    await vault.connect(thief).pause();
+    await vault.connect(thief).guardianBlock(payee.address, "x");
+    await vault.connect(owner).unpause();
+    await vault.connect(owner).setPayeeBlocked(payee.address, false, "undo");
+    await vault.connect(owner).setGuardian(ethers.ZeroAddress, "compromised");
+    await expect(vault.connect(agent).pay(0, 0)).to.emit(vault, "BillPaid");
   });
 
   it("an outsider can do nothing at all", async () => {
