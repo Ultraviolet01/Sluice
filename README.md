@@ -8,7 +8,7 @@ Sluice keeps the money in the company's own vault on **QDay Aevum** and lets the
 
 Built for **Aevum Builder Challenge #1** · tracks: Native AI Assistants, Invoice Payments.
 
-> Design lineage: the treasury-agent idea follows the author's earlier project Keel (NEAR). Sluice is a new implementation for EVM and Aevum; all code here was written during the build window.
+> All code in this repository was written during the build window (Nov 16 to Dec 11, 2026).
 
 ## How it works
 

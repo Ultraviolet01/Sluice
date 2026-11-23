@@ -4,6 +4,9 @@ import "./styles.css";
 import { Sidebar } from "./components.tsx";
 import { AppProvider, configuredVault, useApp } from "./state.tsx";
 import Landing from "./pages/Landing.tsx";
+import HowItWorks from "./pages/HowItWorks.tsx";
+import SecurityPage from "./pages/SecurityPage.tsx";
+import Docs from "./pages/Docs.tsx";
 import Overview from "./pages/Overview.tsx";
 import Approvals from "./pages/Approvals.tsx";
 import Activity from "./pages/Activity.tsx";
@@ -60,6 +63,9 @@ function Dashboard({ page }: { page: string }) {
 
 function App() {
   const route = useHashRoute();
+  if (route === "how-it-works") return <HowItWorks />;
+  if (route === "security") return <SecurityPage />;
+  if (route === "docs") return <Docs />;
   if (!route.startsWith("app")) return <Landing />;
   return (
     <AppProvider>

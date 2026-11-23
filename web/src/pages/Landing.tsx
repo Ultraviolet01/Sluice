@@ -8,14 +8,11 @@ import hull from "../assets/landing/hull.svg";
 import loadline from "../assets/landing/loadline-lg.svg";
 import waves from "../assets/landing/waves.svg";
 import "./landing.css";
+import { REPO, SiteFooter, SiteNav } from "./site.tsx";
 
-const REPO = "https://github.com/ultraviolet01/sluice";
 
-/** In-page links: scroll to the section without changing the app's hash route. */
-const jump = (id: string) => (e: { preventDefault(): void }) => {
-  e.preventDefault();
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-};
+
+
 
 const KEY_PERMS = [
   ["pay(bill, period)", "Allowed", "ok"],
@@ -55,15 +52,7 @@ export default function Landing() {
 
   return (
     <div className="ld">
-      <nav className="ld-nav">
-        <span className="display ld-logo">SLUICE</span>
-        <span className="ld-spacer" />
-        <a href="#how" onClick={jump("how")}>How it works</a>
-        <a href="#security" onClick={jump("security")}>Security</a>
-        <a href={`${REPO}#readme`} target="_blank" rel="noreferrer">Docs</a>
-        <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>
-        <a className="ld-pill-outline" href="#/app/overview">Open app</a>
-      </nav>
+      <SiteNav />
 
       <header className="ld-hero">
         <h1 className="display">Runs your treasury.<br />Never past the line</h1>
@@ -140,7 +129,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="ld-foot"><a href={REPO} target="_blank" rel="noreferrer">Source on GitHub</a></footer>
+      <SiteFooter />
     </div>
   );
 }
