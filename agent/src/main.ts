@@ -152,7 +152,15 @@ async function main() {
   if (failed) process.exitCode = 1;
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// Exit when the round is done: open HTTP keep-alive sockets would otherwise keep the
+// process alive, and a scheduler (Railway cron) skips the next run while one is still up.
+main().then(
+  () => {
+    console.log("Round finished.");
+    process.exit(process.exitCode ?? 0);
+  },
+  (e) => {
+    console.error(e);
+    process.exit(1);
+  },
+);
