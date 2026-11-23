@@ -46,7 +46,7 @@ npm run deploy
 ## Repo layout
 - `contracts/` – `SluiceVault.sol`, tests, deploy script (Hardhat)
 - `agent/` – AI agent (coming)
-- `web/` – dashboard (coming)
+- `web/` – landing page + dashboard (Vite, React, TypeScript): Overview, Approvals, Activity, Rules, Wallets, Settings. Run: `cd web && npm install && npm run dev`
 
 ## Roadmap
 - Agent service: invoice parsing → proposed payment → `pay()` within limits

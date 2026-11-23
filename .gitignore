@@ -12,3 +12,4 @@ contracts/typechain-types/
 contracts/coverage/
 coverage.json
 .DS_Store
+web/dist/

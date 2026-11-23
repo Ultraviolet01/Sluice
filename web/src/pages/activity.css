@@ -1,0 +1,16 @@
+.ac-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.ac-stats .card { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.ac-big { font-size: 27px; letter-spacing: -0.27px; }
+.ac-table { padding: 0; overflow: hidden; }
+.ac-toolbar { display: flex; align-items: center; gap: 8px; padding: 16px 20px; flex-wrap: wrap; }
+.ac-toolbar .grow { flex: 1; }
+.ac-sm { padding: 6px 10px; font-size: 13px; }
+.ac-scroll { overflow-x: auto; }
+.ac-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ac-table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text-tertiary); background: var(--bg-canvas); padding: 10px 20px; border-top: 1px solid var(--border-default); border-bottom: 1px solid var(--border-default); white-space: nowrap; }
+.ac-table td { padding: 13px 20px; border-bottom: 1px solid var(--border-default); white-space: nowrap; }
+.ac-table .r { text-align: right; }
+.ac-proof { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-sluice); font-size: 13px; }
+.ac-foot { display: flex; align-items: center; padding: 16px 20px; }
+.ac-foot .grow { flex: 1; }
+@media (max-width: 1000px) { .ac-stats { grid-template-columns: 1fr 1fr; } }

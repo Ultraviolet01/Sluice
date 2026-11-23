@@ -1,0 +1,28 @@
+.ap-layout { display: flex; gap: 20px; align-items: flex-start; }
+.ap-list { width: 360px; flex-shrink: 0; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ap-list .tabs { align-self: flex-start; margin-bottom: 4px; }
+.ap-item {
+  text-align: left; border: 1px solid transparent; background: transparent; border-radius: 10px;
+  padding: 12px; display: flex; flex-direction: column; gap: 8px; color: inherit;
+}
+.ap-item:hover { background: var(--bg-canvas); }
+.ap-item.on { background: var(--accent-sluice-tint); border-color: var(--accent-sluice); }
+.ap-detail { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+.ap-title { font-size: 24px; font-weight: 500; margin: 14px 0 6px; }
+.ap-amount { font-size: 40px; letter-spacing: -0.4px; }
+.ap-expiry { background: var(--accent-brass-tint); border-radius: 8px; padding: 12px 14px; text-align: right; }
+.ap-expiry .display { font-size: 26px; color: #8a5f12; }
+.ap-flow { background: var(--bg-canvas); border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 16px; }
+.ap-node { flex: 1; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.ap-mid { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ap-h { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; margin-bottom: 10px; }
+.ap-reasons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.ap-reasons li { display: flex; gap: 10px; align-items: center; }
+.ap-reasons span { width: 18px; height: 18px; border-radius: 4px; background: var(--bg-subtle); color: var(--text-secondary); font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ap-check { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border-default); }
+.ap-ic { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.ap-ic.ok { background: var(--status-success-tint); }
+.ap-ic.warn { background: var(--accent-brass-tint); }
+.ok-t { color: var(--status-success); }
+.ap-actions { display: flex; align-items: center; gap: 10px; padding-top: 20px; border-top: 1px solid var(--border-default); flex-wrap: wrap; }
+@media (max-width: 1100px) { .ap-layout { flex-direction: column; align-items: stretch; } .ap-list { width: auto; } .ap-flow { flex-direction: column; align-items: stretch; } }

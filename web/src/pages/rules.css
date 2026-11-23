@@ -1,0 +1,29 @@
+.ru-draft {
+  background: var(--accent-brass-tint); border: 1px solid var(--accent-brass); border-radius: 14px;
+  padding: 24px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap;
+}
+.ru-draft-title { font-size: 18px; font-weight: 500; margin: 14px 0 10px; }
+.ru-bills { background: var(--bg-surface); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.ru-bars { display: flex; gap: 10px; align-items: flex-end; height: 92px; }
+.ru-bars > div { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 30px; }
+.ru-bars i { display: block; width: 28px; border-radius: 3px; }
+.ru-draft-actions { display: flex; flex-direction: column; gap: 8px; width: 160px; }
+.ru-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.ru-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border-default); }
+.ru-input {
+  display: flex; align-items: center; gap: 6px; width: 106px; padding: 7px 10px; border-radius: 8px;
+  background: var(--bg-canvas); border: 1px solid var(--border-strong);
+}
+.ru-input:focus-within { border-color: var(--accent-sluice); }
+.ru-input input { width: 100%; border: 0; outline: 0; background: transparent; font: inherit; font-size: 14px; text-align: right; color: var(--text-primary); }
+.ru-input span { font-size: 11px; color: var(--text-tertiary); }
+.ru-agent {
+  background: var(--bg-sea); color: var(--text-on-dark); border-radius: 14px; padding: 24px;
+  display: flex; gap: 24px; align-items: center; flex-wrap: wrap;
+}
+.ru-agent-sub { font-size: 13px; color: var(--text-on-dark-muted); margin: 8px 0 12px; }
+.ru-agent code { display: inline-block; background: rgba(255,255,255,.08); border-radius: 6px; padding: 6px 10px; font-size: 12px; }
+.ru-agent-actions { display: flex; flex-direction: column; gap: 8px; width: 220px; }
+.ru-dark { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: var(--text-on-dark); }
+.ru-dark-danger { background: transparent; border-color: #e06a55; color: #e06a55; }
+@media (max-width: 1000px) { .ru-grid { grid-template-columns: 1fr; } }
