@@ -3,7 +3,7 @@
 .wl-stats > div:first-child { border-left: 0; }
 .wl-big { font-size: 27px; letter-spacing: -0.27px; }
 .wl-layout { display: flex; gap: 20px; align-items: flex-start; }
-.wl-list { width: 456px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+.wl-list { width: 456px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
 .wl-card { text-align: left; color: inherit; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px; padding: 18px 20px; }
 .wl-card:hover { border-color: var(--border-strong); }
 .wl-card.on { background: var(--accent-sluice-tint); border-color: var(--accent-sluice); }

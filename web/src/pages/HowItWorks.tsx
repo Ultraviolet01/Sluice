@@ -24,7 +24,7 @@ export default function HowItWorks() {
       <Sec title="Three parts">
         <div className="dp-cards">
           <div><p className="dp-k">The vault</p><p>A SluiceVault contract on QDay Aevum holds the company's tUSD8. It knows your bills, your payees and your limits, and checks every payment against them before any money moves.</p><Code path="contracts/contracts/SluiceVault.sol">SluiceVault.sol</Code></div>
-          <div><p className="dp-k">The agent</p><p>A small program that runs every 15 minutes on GitHub Actions. It holds a session key that can settle your listed bills and propose the rest. Nothing else.</p><Code path="agent/README.md">agent/</Code></div>
+          <div><p className="dp-k">The agent</p><p>A small program that runs every 15 minutes on Railway. It holds a session key that can settle your listed bills and propose the rest. Nothing else.</p><Code path="agent/README.md">agent/</Code></div>
           <div><p className="dp-k">The dashboard</p><p>Where you list bills, set the line, see the forecast and every receipt, and approve what waits for you, signing in your own wallet.</p><Code path="web/README.md">web/</Code></div>
         </div>
       </Sec>

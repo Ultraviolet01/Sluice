@@ -78,7 +78,7 @@ export default function SecurityPage() {
 
       <Sec title="Keys">
         <ul className="dp-list">
-          <li>The agent's key lives only in a GitHub Actions secret. The deploy key is in a local file git ignores. No key is in the repository or its history.</li>
+          <li>The agent's key lives only in the hosting's encrypted settings (Railway, with GitHub Actions as a manual backup). The deploy key is in a local file git ignores. No key is in the repository or its history.</li>
           <li>The owner signs in their own wallet. Every action is simulated first, so a refusal shows the vault's reason before anything is signed.</li>
           <li>The invoice reader stores nothing, checks where requests come from, limits each visitor, and only fills in a complete 0x payment address.</li>
         </ul>

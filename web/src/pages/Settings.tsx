@@ -71,7 +71,7 @@ export default function Settings() {
         </section>
         <section className="card st-notif">
           <p className="card-title" style={{ marginBottom: 8 }}>Agent schedule</p>
-          <p className="muted small">The agent runs every 15 minutes on GitHub Actions. Each run's log lists what it paid, proposed or refused, with transaction links.</p>
+          <p className="muted small">The agent runs every 15 minutes on Railway. Each round's log lists what it paid, proposed or refused, with transaction links, and its alerts reach your linked Telegram chat.</p>
           <p className="muted small" style={{ marginTop: 10 }}>It needs a little tQDAY for gas at its own address.</p>
         </section>
       </div>

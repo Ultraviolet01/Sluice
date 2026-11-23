@@ -85,7 +85,7 @@ On top of the vault's rules it adds caution:
 
 ## Keys and secrets
 
-- The agent's key lives only in the GitHub Actions secret `AGENT_PRIVATE_KEY`; the deploy key lives in `contracts/.env`, which `.gitignore` excludes. No key is in the repository or its history.
+- The agent's key lives only in the encrypted variables of the hosting that runs it (Railway; GitHub Actions secret `AGENT_PRIVATE_KEY` for the manual backup); the deploy key lives in `contracts/.env`, which `.gitignore` excludes. No key is in the repository or its history.
 - The owner signs in their own browser wallet. The dashboard simulates each action first, so a refusal shows the reason before anything is signed ([`web/src/chain.ts`](../web/src/chain.ts#L160)).
 - The invoice reader stores nothing, checks the request's origin, rate-limits each visitor, and only fills in a payment address that is a complete `0x` address. The owner still checks and signs every bill.
 
