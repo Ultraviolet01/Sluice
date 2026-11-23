@@ -37,7 +37,7 @@ flowchart LR
   subgraph Aevum Testnet
     V["SluiceVault<br/>holds tUSD8<br/>enforces the line"]
   end
-  A["Sluice agent<br/>GitHub Actions, every 15 min"] -- "checkPayment" --> V
+  A["Sluice agent<br/>Railway, every 15 min"] -- "checkPayment" --> V
   A -- "pay(bill, period)<br/>propose(bill, period)" --> V
   A -. "second look,<br/>stricter only" .-> C["Claude Haiku 5.5"]
   V -- "tUSD8" --> P["Payees"]
@@ -148,7 +148,7 @@ npm run deploy
 | `agent/` | The agent: observe, forecast, decide, review, act, learn. See [agent/README.md](agent/README.md) |
 | `web/` | Landing page, owner dashboard, and the invoice reader function. See [web/README.md](web/README.md) |
 | `docs/` | [Security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md), [backlog](docs/BACKLOG.md) |
-| `.github/workflows/` | `ci.yml` runs every check on each push; `agent.yml` runs the agent every 15 minutes |
+| `.github/workflows/` | `ci.yml` runs every check on each push; `agent.yml` runs one agent round by hand (the 15-minute schedule runs on Railway) |
 
 ## Known limits
 

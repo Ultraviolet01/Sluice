@@ -1,6 +1,6 @@
 # Sluice agent
 
-Settles the bills the owner listed on a SluiceVault, inside the vault's limits, and proposes the rest to the owner. One round per run; GitHub Actions runs it every 15 minutes (`.github/workflows/agent.yml`). No database, no server: the vault's own records are the agent's memory, so a round can never pay a bill period twice.
+Settles the bills the owner listed on a SluiceVault, inside the vault's limits, and proposes the rest to the owner. One round per run; Railway runs it every 15 minutes as a scheduled service (`sluice-agent`, root directory `agent`, start command `npm run agent`, cron `*/15 * * * *`). `.github/workflows/agent.yml` runs a round by hand as a backup. No database, no server: the vault's own records are the agent's memory, so a round can never pay a bill period twice.
 
 ## A round
 
@@ -18,7 +18,7 @@ Each round has a time limit (`SLUICE_ROUND_SECONDS`, default 420, inside the job
 
 The vault re-checks everything on chain; the agent can only ever be stricter than the vault.
 
-The agent keeps no database. To send each Telegram alert once, it remembers what it sent in `.sluice-alerts.json`, which the workflow keeps between runs with the GitHub Actions cache; losing it only means one repeated alert.
+The agent keeps no database. To send each Telegram alert once, it remembers what it sent in a small file (`SLUICE_ALERT_STATE`, on a Railway volume at `/data`); losing it only means one repeated alert.
 
 ## Run it
 
