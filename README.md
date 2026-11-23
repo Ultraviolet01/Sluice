@@ -12,14 +12,18 @@ Letting an AI agent touch company funds is only acceptable if the agent *cannot*
 ## Guardrails (enforced on-chain)
 | Control | How |
 |---|---|
-| Scoped session keys | Each agent address gets a session with a per-payment cap, a 24h budget and an expiry |
-| Instant revocation | `revokeSession(agent)`; `pause()` halts all agent payments |
-| Payee allowlist + blocklist | Agent can only pay allowlisted payees; blocklist always wins, even on owner approval |
-| Human approval | Payments above `approvalThreshold` are queued (`PaymentQueued`) until the owner calls `approve` or `reject` |
-| Cash buffer | No payment may drop the vault below `cashBuffer` |
-| Idempotency | Every payment carries an `invoiceId`; an id can settle at most once, so retries never double-pay |
-| Receipts | `InvoicePaid(invoiceId, payee, amount, agent, memoHash, ownerApproved)` for every settlement |
-| Ownership | `Ownable2Step`; owner can always withdraw |
+| Bills only | The owner lists each bill (`addBill`: payee, amount, first due date, repeat every N days). The agent's `pay(billId, period)` takes no payee and no amount, so even a stolen agent key can only pay the owner's own bills |
+| Once per period | Each bill period settles at most once; a period can't be paid more than 3 days before it is due |
+| Scoped session keys | Each agent gets a per-payment cap, a rolling 24h cap and an expiry (`grantSession`) |
+| Instant revocation | `revokeSession(agent)`; `pause()` halts every agent payment |
+| Payee allowlist + blocklist | Bills to payees not on the allowlist need the owner; the blocklist always wins, even on owner approval |
+| Human approval | Bills outside the agent's limits are proposed (`propose`, with a note) and wait for `approve` or `reject` |
+| Cash buffer | No agent payment may drop the vault below `cashBuffer` |
+| Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
+| Receipts and audit trail | `BillPaid` for every settlement, `PaymentProposed` / `PaymentRejected`, and `PolicyChanged` with old and new values |
+| Ownership | `Ownable2Step`; the owner can always withdraw |
+
+Attack suite: `contracts/test/attacks.test.js` signs with the agent's key and tries 20 ways to move money or change rules; all are refused.
 
 ## Network
 | | |
