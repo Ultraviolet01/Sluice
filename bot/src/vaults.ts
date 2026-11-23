@@ -77,8 +77,8 @@ export interface Chain {
 export function viemChain(opts: { rpcUrl: string; factory: Address; guardianKey: Hex; fromBlock?: bigint; chain?: typeof aevum }): Chain {
   const chain = opts.chain ?? aevum;
   const account = privateKeyToAccount(opts.guardianKey);
-  const pub = createPublicClient({ chain, transport: http(opts.rpcUrl) });
-  const wallet = createWalletClient({ chain, account, transport: http(opts.rpcUrl) });
+  const pub = createPublicClient({ chain, transport: http(opts.rpcUrl, { timeout: 15_000, retryCount: 2 }) });
+  const wallet = createWalletClient({ chain, account, transport: http(opts.rpcUrl, { timeout: 20_000, retryCount: 1 }) });
   const rv = <T,>(address: Address, functionName: string, args: unknown[] = []) =>
     pub.readContract({ address, abi: VAULT, functionName: functionName as never, args: args as never }) as Promise<T>;
   const rf = <T,>(functionName: string, args: unknown[] = []) =>

@@ -201,8 +201,8 @@ Everything runs on a laptop against a local chain first (see [Check it](#check-i
 2. **Contracts**: `cd contracts && cp .env.example .env`, fill in `DEPLOYER_PRIVATE_KEY` and `OWNER_ADDRESS`, then `npm run deploy`. Verify the source with `node scripts/verify-explorer.mjs`.
 3. **Agent key**: `npm run agent:new-key` (writes `contracts/agent.key`, git-ignored), then `npm run agent:fund -- --network aevumTestnet`.
 4. **Dashboard**: in `web/`, set `VITE_FACTORY_ADDRESS`, `VITE_AGENT_ADDRESS`, `VITE_FROM_BLOCK` (and `ANTHROPIC_API_KEY` for the invoice reader), then `npm run build`. Any static host works; Vercel also runs `api/read-invoice.ts`. All settings: [web/README.md](web/README.md).
-5. **Agent**: run `npm run agent` in `agent/` on a schedule with `AGENT_PRIVATE_KEY`, `SLUICE_FACTORY`, `SLUICE_FROM_BLOCK`, and optionally `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `SLUICE_APP_URL`, `SLUICE_ALERT_STATE`. Railway: root directory `agent`, cron `*/15 * * * *`. All settings: [agent/README.md](agent/README.md).
-6. **Telegram bot** (optional): `npm start` in `bot/` with `TELEGRAM_BOT_TOKEN`, `BOT_GUARDIAN_KEY`, `SLUICE_FACTORY`, `SLUICE_APP_URL`. Steps: [bot/README.md](bot/README.md).
+5. **Agent**: run `npm run agent` in `agent/` on a schedule with `AGENT_PRIVATE_KEY`, `SLUICE_FACTORY`, `SLUICE_FROM_BLOCK`, and optionally `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `SLUICE_APP_URL`, `SLUICE_ALERT_STATE`. Railway: root directory `agent`, build `npm run build`, start `node --max-old-space-size=192 dist/main.mjs`, cron `*/15 * * * *`. All settings: [agent/README.md](agent/README.md).
+6. **Telegram bot** (optional): `npm run build && npm start` in `bot/` with `TELEGRAM_BOT_TOKEN`, `BOT_GUARDIAN_KEY`, `SLUICE_FACTORY`, `SLUICE_APP_URL`. Steps: [bot/README.md](bot/README.md).
 
 ## API reference
 

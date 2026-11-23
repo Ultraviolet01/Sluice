@@ -18,3 +18,5 @@ contracts/deployments/localhost-*
 contracts/agent.key
 contracts/scripts/_*
 bot/src/_*
+bot/dist/
+agent/dist/

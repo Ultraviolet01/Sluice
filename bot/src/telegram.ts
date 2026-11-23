@@ -26,10 +26,13 @@ export interface Telegram {
 
 export function telegram(token: string, fetcher: typeof fetch = fetch): Telegram {
   const call = async <T,>(method: string, body: unknown): Promise<T> => {
+    // Never wait forever: a long poll is held up to its own timeout, everything else 15 s.
+    const wait = method === "getUpdates" ? ((body as { timeout?: number }).timeout ?? 0) * 1000 + 10_000 : 15_000;
     const r = await fetcher(`https://api.telegram.org/bot${token}/${method}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(wait),
     });
     const j = (await r.json()) as { ok: boolean; result: T; description?: string };
     if (!j.ok) throw new Error(`Telegram ${method}: ${j.description ?? r.status}`);

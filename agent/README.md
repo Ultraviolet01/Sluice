@@ -1,6 +1,6 @@
 # Sluice agent
 
-Settles the bills the owner listed on a SluiceVault, inside the vault's limits, and proposes the rest to the owner. One round per run; Railway runs it every 15 minutes as a scheduled service (`sluice-agent`, root directory `agent`, start command `npm run agent`, cron `*/15 * * * *`). `.github/workflows/agent.yml` runs a round by hand as a backup. No database, no server: the vault's own records are the agent's memory, so a round can never pay a bill period twice.
+Settles the bills the owner listed on a SluiceVault, inside the vault's limits, and proposes the rest to the owner. One round per run; Railway runs it every 15 minutes as a scheduled service (`sluice-agent`, root directory `agent`, build command `npm run build`, start command `node --max-old-space-size=192 dist/main.mjs`, cron `*/15 * * * *`; the bundle peaks around 80 MB a round, against about 300 MB when run through `tsx`). `.github/workflows/agent.yml` runs a round by hand as a backup. No database, no server: the vault's own records are the agent's memory, so a round can never pay a bill period twice.
 
 ## A round
 

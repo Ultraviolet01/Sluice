@@ -24,7 +24,7 @@ The agent (GitHub Actions) sends each company's alerts to that company's linked 
 
 1. Create a bot with **@BotFather**; keep its token. Set its username in the website's `VITE_TELEGRAM_BOT`.
 2. Create the bot's own key: `cd contracts && node scripts/new-agent-key.js ../bot.key` (any fresh key; it only ever acts as a guardian). Send its address a little tQDAY for gas, and set that address as the website's `VITE_BOT_GUARDIAN`.
-3. In Railway: **New Project → Deploy from GitHub repo**, choose this repository, and set **Root Directory** to `bot`. Railway runs `npm install` and `npm start`.
+3. In Railway: **New Project → Deploy from GitHub repo**, choose this repository, and set **Root Directory** to `bot`, **Build Command** to `npm run build` (bundles the bot into one file) and **Start Command** to `node --max-old-space-size=128 dist/main.mjs`. Plain Node with no compiler in memory: about a quarter of the memory of running the TypeScript directly. Set deployment overlap to 0 so the old and new copies never poll Telegram at once.
 4. Add these variables in Railway:
 
 | Variable | Value |

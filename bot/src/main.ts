@@ -43,18 +43,37 @@ const safe = async (u: Update) => {
   }
 };
 
+// Railway sends SIGTERM before replacing the bot: stop asking Telegram for updates and exit,
+// so the old and new copies never poll at once.
+let stopping = false;
+const stop = () => {
+  stopping = true;
+  console.log("Stopping.");
+  setTimeout(() => process.exit(0), 500).unref();
+};
+process.on("SIGTERM", stop);
+process.on("SIGINT", stop);
+// A bug in one update must never take the bot down.
+process.on("unhandledRejection", (e) => console.error("unhandled:", (e as Error)?.message ?? e));
+
 async function poll() {
   let offset = 0;
-  for (;;) {
+  let failures = 0;
+  while (!stopping) {
     try {
-      const updates = await tg.updates(offset, 30);
+      const updates = await tg.updates(offset, 25);
+      failures = 0;
       for (const u of updates) {
         offset = u.update_id + 1;
         await safe(u);
       }
     } catch (e) {
-      console.error("polling:", (e as Error).message);
-      await new Promise((r) => setTimeout(r, 5000));
+      const msg = (e as Error).message;
+      if (stopping) break;
+      // Another copy is still polling (during a redeploy): wait quietly for it to stop.
+      if (!msg.includes("Conflict")) console.error("polling:", msg);
+      failures++;
+      await new Promise((r) => setTimeout(r, Math.min(30_000, 2000 * failures)));
     }
   }
 }
@@ -66,7 +85,10 @@ function webhook(port: number, secret: string) {
       return;
     }
     let body = "";
-    req.on("data", (c) => (body += c));
+    req.on("data", (c) => {
+      body += c;
+      if (body.length > 1_000_000) req.destroy(); // Telegram updates are small
+    });
     req.on("end", () => {
       res.writeHead(200).end();
       try {
