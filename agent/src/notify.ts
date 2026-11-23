@@ -74,8 +74,10 @@ export async function send(tg: Telegram, text: string, fetcher: typeof fetch = f
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ chat_id: tg.chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(buttons ? { reply_markup: { inline_keyboard: buttons } } : {}) }),
     });
+    if (!r.ok) console.error(`[telegram] chat ${tg.chatId}: ${r.status} ${(await r.text().catch(() => "")).slice(0, 200)}`);
     return r.ok;
-  } catch {
+  } catch (e) {
+    console.error(`[telegram] chat ${tg.chatId}: ${(e as Error).message}`);
     return false;
   }
 }

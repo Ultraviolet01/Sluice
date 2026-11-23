@@ -134,10 +134,14 @@ async function main() {
       } else {
         const to = { ...tg, chatId: chat };
         const app = appUrl ? `${appUrl.replace(/\/$/, "")}/#/app/overview?vault=${vault}` : undefined;
-        if (plain.length && (await send(to, format(label, plain.map(explorer), app)))) for (const a of plain) sent[a.key] = Date.now();
+        if (plain.length) {
+          const ok = await send(to, format(label, plain.map(explorer), app));
+          console.log(`[alert] ${plain.length} sent to the company's Telegram chat: ${ok ? "delivered" : "FAILED"}`);
+          if (ok) for (const a of plain) sent[a.key] = Date.now();
+        }
         // One message per waiting payment, so its buttons act on that payment.
         for (const a of bills) {
-          if (await send(to, format(label, [explorer(a)]), fetch, billButtons(appUrl, vault, indexOf.get(vault.toLowerCase()), a.bill!))) sent[a.key] = Date.now();
+          if (await send(to, format(label, [explorer(a)]), fetch, billButtons(appUrl, vault, indexOf.get(vault.toLowerCase()), a.bill!))) { sent[a.key] = Date.now(); console.log("[alert] payment alert with buttons delivered"); }
           else console.error("[alert] Telegram send failed");
         }
       }
