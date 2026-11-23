@@ -166,7 +166,9 @@ export async function deposit(token: Address, vault: Address, account: Address, 
   return hash;
 }
 
-export const publicClient = createPublicClient({ chain: aevum, transport: http() });
+// Calls made together are sent in one HTTP request (JSON-RPC batching): the dashboard's
+// many small reads cost about one round trip instead of one each.
+export const publicClient = createPublicClient({ chain: aevum, transport: http(undefined, { batch: { batchSize: 60, wait: 8 }, timeout: 20_000, retryCount: 2 }) });
 
 type Eip1193 = { request(args: { method: string; params?: unknown[] }): Promise<unknown> };
 // Browser wallets announce themselves (EIP-6963). With several extensions installed,

@@ -85,6 +85,8 @@ const why = (reason: unknown, fallback: string) => (typeof reason === "string" &
 export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   const read = <T,>(functionName: string, args: unknown[] = []) =>
     publicClient.readContract({ address: vault, abi: VAULT_ABI, functionName: functionName as never, args: args as never }) as Promise<T>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bornP = bornAt(publicClient as any, vault, fromBlock); // found while the first reads run
   const [guardianRaw, notifyChat, token, owner, pendingRaw, paused, balance, cashBuffer, threshold, count, block] = await Promise.all([
     read<Address>("guardian"),
     read<string>("notifyChat"),
@@ -95,19 +97,23 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   ]);
   const now = Number(block.timestamp);
 
-  const bills: Bill[] = [];
-  for (let i = 0; i < Number(count); i++) {
-    const b = await read<{ payee: Address; amount: bigint; firstDue: bigint; intervalDays: number; active: boolean; critical: boolean; label: string }>("getBill", [BigInt(i)]);
-    bills.push({ id: i, payee: b.payee, amount: b.amount, firstDue: Number(b.firstDue), intervalDays: Number(b.intervalDays), active: b.active, critical: b.critical, label: b.label });
-  }
-
-  // Every event the vault ever emitted, oldest first, with block times.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logs = await logsFrom<Log>(publicClient as any, { address: vault }, fromBlock);
+  const pub = publicClient as any;
+  // Scan only from the block the vault was born in, and read everything else at the same time.
+  const born = await bornP;
+  const from = born > fromBlock ? born : fromBlock;
+  const [billRows, logs, moves] = await Promise.all([
+    Promise.all(Array.from({ length: Number(count) }, (_, i) => read<{ payee: Address; amount: bigint; firstDue: bigint; intervalDays: number; active: boolean; critical: boolean; label: string }>("getBill", [BigInt(i)]))),
+    // Every event the vault ever emitted, oldest first.
+    logsFrom<Log>(pub, { address: vault }, from),
+    vaultMoves(pub, token, vault, from).catch(() => null),
+  ]);
+  const bills: Bill[] = billRows.map((b, i) => ({ id: i, payee: b.payee, amount: b.amount, firstDue: Number(b.firstDue), intervalDays: Number(b.intervalDays), active: b.active, critical: b.critical, label: b.label }));
+  // Block times, all looked up together (one batched request).
   const times = new Map<bigint, number>();
-  for (const n of [...new Set(logs.map((l) => l.blockNumber!))].slice(-80)) {
-    times.set(n, Number((await publicClient.getBlock({ blockNumber: n })).timestamp));
-  }
+  const blocks = [...new Set(logs.map((l) => l.blockNumber!))];
+  const stamps = await Promise.all(blocks.map((n) => publicClient.getBlock({ blockNumber: n }).then((b) => Number(b.timestamp)).catch(() => now)));
+  blocks.forEach((n, i) => times.set(n, stamps[i]));
   type Ev = { name: string; args: Record<string, unknown>; at: number; tx: string };
   const events: Ev[] = [];
   for (const l of logs) {
@@ -134,10 +140,13 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
 
   // Proposals and their current status.
   const approvals: ApprovalRow[] = [];
-  for (const e of events.filter((x) => x.name === "PaymentProposed")) {
+  const proposed = events.filter((x) => x.name === "PaymentProposed");
+  // Every proposal's status, read together.
+  const statuses = await Promise.all(proposed.map((e) => read<readonly [number, Address, bigint, number, string]>("settlements", [BigInt(Number(e.args.billId)), Number(e.args.period)])));
+  for (const [i, e] of proposed.entries()) {
     const billId = Number(e.args.billId);
     const period = Number(e.args.period);
-    const st = await read<readonly [number, Address, bigint, number, string]>("settlements", [BigInt(billId), period]);
+    const st = statuses[i];
     approvals.push({
       key: `${billId}:${period}`,
       billId,
@@ -236,8 +245,6 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
     return { billId: x.bill.id, period: x.period, label: x.bill.label, payee: x.bill.payee, due: x.due, amount: x.bill.amount, kind, status };
   });
   const forecast = runForecast(balance, items.filter((x) => !payees.get(x.bill.payee.toLowerCase())?.blocked), now).map((d) => ({ day: d.day, balance: d.balance }));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const moves = await vaultMoves(publicClient as any, token, vault, fromBlock).catch(() => null);
   const history = moves ? balanceHistory(balance, moves, now) : [];
 
   return {
@@ -255,7 +262,7 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
 }
 
 export { fmt, toUnits } from "./units.ts";
-import { logsFrom } from "./logs.ts";
+import { bornAt, logsFrom } from "./logs.ts";
 import { balanceHistory, vaultMoves } from "./history.ts";
 import { fmt } from "./units.ts";
 
