@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Address } from "viem";
 import { Modal } from "../components.tsx";
 import { FACTORY, HOSTED_AGENT, createCompany, deposit, errorText, explorerTxUrl, myCompanies, ownerSend, short, tokenBalance } from "../chain.ts";
@@ -168,27 +168,75 @@ export function CreatePanel({ onClose, inline = false, first = false }: { onClos
   );
 }
 
-/** The companies the connected wallet created, to switch between them. */
-export function CompanySwitch({ current }: { current: Address }) {
-  const { account } = useApp();
+/**
+ * The company card at the top of the sidebar. Clicking it opens "Your companies":
+ * every company this wallet created, the current one marked, and "Add company".
+ */
+export function CompanySwitch() {
+  const { model: m, account, isOwner, connect } = useApp();
+  const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [list, setList] = useState<{ vault: Address; name: string }[]>([]);
+  const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (account) myCompanies(account).then(setList).catch(() => setList([]));
-  }, [account]);
-  if (list.length < 2) return null;
+    if (account && m?.live) myCompanies(account).then(setList).catch(() => setList([]));
+  }, [account, m?.live]);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  if (!m) return null;
+
+  const companies = m.live ? (list.some((c) => c.vault.toLowerCase() === m.vault.toLowerCase()) ? list : [{ vault: m.vault, name: m.name }, ...list]) : [{ vault: m.vault, name: m.name }];
+  const go = (vault: Address) => {
+    if (vault.toLowerCase() === m.vault.toLowerCase()) return setOpen(false);
+    window.location.hash = `#/app/overview?vault=${vault}`;
+    window.location.reload();
+  };
+  const owner = m.owner ? (account && isOwner ? "you" : short(m.owner)) : "—";
+
   return (
-    <select
-      className="company-select"
-      aria-label="Switch company"
-      value={list.find((c) => c.vault.toLowerCase() === current.toLowerCase())?.vault ?? ""}
-      onChange={(e) => {
-        window.location.hash = `#/app/overview?vault=${e.target.value}`;
-        window.location.reload();
-      }}
-    >
-      {!list.some((c) => c.vault.toLowerCase() === current.toLowerCase()) && <option value="">Switch company…</option>}
-      {list.map((c) => <option key={c.vault} value={c.vault}>{c.name}</option>)}
-    </select>
+    <div className="cs" ref={ref}>
+      <button className={`cs-card${open ? " open" : ""}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
+        <span className="cs-text">
+          <span className="row-between"><span className="cs-name">{m.name}</span><span className="chip">{m.live ? "Testnet" : "Demo"}</span></span>
+          <span className="cs-sub mono">{short(m.vault)}</span>
+          <span className="cs-sub">Owner: <span className="mono">{owner}</span></span>
+        </span>
+        <svg className="cs-chev" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M4 5.5 7 2.5l3 3M4 8.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+      {m.live && !account && <button className="btn btn-secondary cs-connect" onClick={connect}>Connect wallet</button>}
+      {open && (
+        <div className="cs-menu" role="menu">
+          <p className="cs-head">Your companies</p>
+          {companies.map((c) => {
+            const on = c.vault.toLowerCase() === m.vault.toLowerCase();
+            return (
+              <button key={c.vault} role="menuitem" className={`cs-item${on ? " on" : ""}`} onClick={() => go(c.vault)} aria-current={on}>
+                <span className="cs-badge display">{(c.name.trim()[0] ?? "?").toUpperCase()}</span>
+                <span className="cs-text"><span className="cs-name">{c.name}</span><span className="cs-sub mono">{short(c.vault)}</span></span>
+              </button>
+            );
+          })}
+          {m.live && !account && <p className="cs-note xs">Connect your wallet to see all your companies.</p>}
+          <div className="cs-sep" />
+          <button role="menuitem" className="cs-item" onClick={() => { setOpen(false); setCreating(true); }}>
+            <span className="cs-badge add">+</span>
+            <span className="cs-name">Add company</span>
+          </button>
+        </div>
+      )}
+      {creating && <CreatePanel onClose={() => setCreating(false)} />}
+    </div>
   );
 }
 

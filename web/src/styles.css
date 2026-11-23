@@ -217,9 +217,12 @@ button { font: inherit; cursor: pointer; }
 @media (max-width: 700px) { .gs-bar { display: none; } .gs-steps li { flex-wrap: wrap; } }
 
 /* ---------- first visit ---------- */
-.ob { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 40px 16px; background: radial-gradient(1200px 500px at 50% 0%, var(--accent-sluice-tint), var(--bg-canvas) 70%); }
+.ob-behind { position: fixed; inset: 0; overflow: hidden; filter: blur(7px) saturate(.9); transform: scale(1.03); pointer-events: none; user-select: none; }
+.ob { position: fixed; inset: 0; z-index: 40; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 40px 16px; background: rgba(15, 47, 58, .28); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.ob-wordmark { color: var(--bg-surface) !important; text-shadow: 0 1px 12px rgba(15,47,58,.35); }
+.ob-signed { color: var(--bg-surface) !important; }
 .ob-wordmark { font-size: 26px; letter-spacing: 2.08px; color: var(--text-primary); }
-.ob-card { width: 560px; max-width: 100%; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 18px; padding: 36px; box-shadow: 0 20px 60px rgba(15,47,58,.08); display: flex; flex-direction: column; gap: 14px; }
+.ob-card { width: 560px; max-width: 100%; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 18px; padding: 36px; box-shadow: 0 30px 80px rgba(15,47,58,.30); display: flex; flex-direction: column; gap: 14px; }
 .ob-card.center { text-align: center; align-items: center; }
 .ob-title { margin: 0; font-size: 34px; line-height: 1.12; letter-spacing: -0.6px; color: var(--text-primary); }
 .ob-lead { font-size: 16px; color: var(--text-secondary); line-height: 1.5; }
@@ -235,3 +238,26 @@ button { font: inherit; cursor: pointer; }
 .ob-company:hover { border-color: var(--accent-sluice); background: var(--accent-sluice-tint); }
 .demo-banner a { color: inherit; text-decoration: underline; }
 @media (max-width: 600px) { .ob-card { padding: 24px 18px; } .ob-title { font-size: 28px; } }
+
+/* ---------- company switcher ---------- */
+.sidebar { z-index: 5; } /* the companies menu opens over the main content */
+.cs { position: relative; }
+.cs-card { width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; color: inherit; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px; padding: 12px 12px 12px 14px; }
+.cs-card:hover { border-color: var(--border-strong); }
+.cs-card.open { border-color: var(--accent-sluice); }
+.cs-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cs-name { font-size: 14px; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-sub { font-size: 12px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-card .chip { font-size: 11px; }
+.cs-chev { color: var(--text-tertiary); flex-shrink: 0; }
+.cs-connect { width: 100%; margin-top: 8px; padding: 7px 10px; font-size: 13px; }
+.cs-menu { position: absolute; top: calc(100% + 8px); left: 0; width: 300px; max-height: 70vh; overflow: auto; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 14px; box-shadow: 0 16px 40px rgba(15,47,58,.14); padding: 8px; z-index: 30; }
+.cs-head { font-size: 13px; color: var(--text-tertiary); padding: 8px 10px 6px; }
+.cs-item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 9px 10px; border: 0; border-radius: 10px; background: transparent; color: inherit; text-align: left; }
+.cs-item:hover { background: var(--bg-canvas); }
+.cs-item.on { background: var(--bg-subtle); }
+.cs-badge { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-sluice-tint); color: var(--accent-sluice); font-size: 15px; }
+.cs-badge.add { background: transparent; border: 1.5px dashed var(--border-strong); color: var(--text-secondary); font-family: var(--font-body); font-size: 18px; }
+.cs-sep { height: 1px; background: var(--border-default); margin: 6px 4px; }
+.cs-note { padding: 4px 10px; color: var(--text-tertiary); }
+@media (max-width: 900px) { .cs-menu { width: 100%; } }

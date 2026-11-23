@@ -16,3 +16,4 @@ web/dist/
 .sluice-alerts.json
 contracts/deployments/localhost-*
 contracts/agent.key
+contracts/scripts/_*

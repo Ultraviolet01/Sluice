@@ -33,7 +33,21 @@ function useHashRoute() {
 function Dashboard({ page }: { page: string }) {
   const { model, error, msg, reload } = useApp();
   // First visit with company creation switched on: connect, then name the first company.
-  if (FACTORY && !configuredVault() && !demoRequested()) return <><Onboarding />{msg && <div className="toast" role="status">{msg}</div>}</>;
+  if (FACTORY && !configuredVault() && !demoRequested()) {
+    // The treasury, blurred, behind the first-visit card: what opens once you're in.
+    return (
+      <>
+        <div className="ob-behind" aria-hidden="true" ref={(el) => el?.setAttribute("inert", "")}>
+          <div className="app">
+            <Sidebar route="overview" />
+            <main className="main"><Overview /></main>
+          </div>
+        </div>
+        <Onboarding />
+        {msg && <div className="toast" role="status">{msg}</div>}
+      </>
+    );
+  }
   if (!model) {
     return (
       <div className="loading">
