@@ -12,6 +12,7 @@
 //   SLUICE_LOCAL=1       optional, use a local Hardhat node instead of Aevum
 //   TELEGRAM_BOT_TOKEN   optional: alerts to each company's linked chat when something needs its owner
 //   SLUICE_APP_URL       optional, the dashboard's address, linked from alerts
+//   SLUICE_IDENTITY_REGISTRY optional, ERC-8004 registry for Confirmation of Payee (default: Sluice's on Aevum)
 //   SLUICE_ALERT_STATE   optional, file remembering alerts already sent (default .sluice-alerts.json)
 //   SLUICE_MIN_GAS       optional, alert the operator when the agent's tQDAY falls below this (default 0.2)
 //   OPERATOR_TELEGRAM_CHAT_ID  optional, the operator's chat (agent gas); TELEGRAM_CHAT_ID also works
@@ -20,11 +21,12 @@
 // Flags: --dry-run decides everything and signs nothing.
 
 import { appendFileSync } from "node:fs";
-import { isAddress, type Address, type Hex } from "viem";
+import { createPublicClient, http, isAddress, type Address, type Hex } from "viem";
 import { hardhat } from "viem/chains";
 import { aevumTestnet, viemChain } from "./chain.ts";
 import { runVault, type Event } from "./loop.ts";
 import { makeReviewer } from "./review.ts";
+import { IDENTITY_REGISTRY, loadIdentities } from "./payee.ts";
 import { explain } from "./explain.ts";
 import { LOW_GAS, billButtons, format, fresh, gasAlert, loadSent, saveSent, send, type Alert } from "./notify.ts";
 
@@ -55,6 +57,12 @@ async function main() {
     chain: process.env.SLUICE_LOCAL === "1" ? (hardhat as unknown as typeof aevumTestnet) : aevumTestnet,
   });
   const reviewer = makeReviewer(process.env.ANTHROPIC_API_KEY);
+  // Confirmation of Payee (ERC-8004). Off on a local node, where the registry does not exist.
+  const registry = (process.env.SLUICE_IDENTITY_REGISTRY || (process.env.SLUICE_LOCAL === "1" ? "" : IDENTITY_REGISTRY)) as Address | "";
+  const identities = registry
+    ? await loadIdentities(createPublicClient({ transport: http(process.env.AEVUM_RPC_URL || "https://rpc-test.qday.info", { timeout: 20_000 }) }) as never, registry)
+    : [];
+  console.log(`Confirmation of Payee: ${registry ? `${identities.length} ERC-8004 identities from ${registry}` : "off"}`);
   const found = factory ? await chain.discover(factory as Address).catch((e) => {
     console.error(`[error] reading the factory: ${(e as Error).message}`);
     return [] as { vault: Address; index: number }[];
@@ -101,6 +109,7 @@ async function main() {
     try {
       await runVault(chain, vault, {
         dryRun,
+        identities,
         reviewer,
         explain: async (x) => (await explain(anthropicKey, x)).text,
         alert: (a) => alerts.push(a),

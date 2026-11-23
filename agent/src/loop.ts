@@ -9,6 +9,7 @@ import { template, type ExplainInput } from "./explain.ts";
 import { clean } from "./guard.ts";
 import type { Alert } from "./notify.ts";
 import { stricter, type Reviewer } from "./review.ts";
+import { confirmPayee, describe, type Identity } from "./payee.ts";
 
 export interface Event {
   step: "observe" | "forecast" | "decide" | "act" | "learn" | "error";
@@ -30,6 +31,8 @@ export interface RoundOptions {
   alert?: (a: Alert) => void;
   /** Wall-clock time (ms) after which no new bill is started; the rest wait for the next round. */
   deadline?: number;
+  /** ERC-8004 identities for Confirmation of Payee; none means the check is skipped. */
+  identities?: Identity[];
 }
 
 const day = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
@@ -90,6 +93,11 @@ export async function runVault(chain: Chain, vault: Address, o: RoundOptions): P
     const history = v.paid.filter((p) => p.payee.toLowerCase() === bill.payee.toLowerCase()).map((p) => p.amount);
     let action: Action = decide(band, reason, { spike: isSpike(bill.amount, history), critical: bill.critical, due, now });
 
+    // Confirmation of Payee: a bill whose name and address disagree with the registry goes to the owner.
+    const cop = confirmPayee(bill.payee, bill.label, o.identities ?? []);
+    const copNote = describe(cop, bill.payee);
+    if (action.kind === "pay" && copNote) action = { kind: "propose", reason: `needs you: payee not confirmed: ${copNote}` };
+
     if (action.kind === "pay" && reviews < maxReviews) {
       reviews++;
       const verdict = await o.reviewer.review({
@@ -99,6 +107,7 @@ export async function runVault(chain: Chain, vault: Address, o: RoundOptions): P
         due: day(due),
         history: history.map(m),
         knownPayees: knownPayees.filter((k) => !k.endsWith(`(${bill.payee})`)),
+        payeeRegistry: cop.status === "confirmed" ? `confirmed: registered to ${cop.identity.name}` : "not registered",
       });
       action = stricter(action, verdict);
     } else if (action.kind === "pay") {

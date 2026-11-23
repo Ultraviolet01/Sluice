@@ -18,6 +18,8 @@ export interface ReviewInput {
   knownPayees: string[];
   /** Untrusted text attached to the bill (an invoice's wording). */
   invoiceText?: string;
+  /** What the ERC-8004 Identity Registry says about this address. */
+  payeeRegistry?: string;
 }
 
 export interface Verdict {
@@ -61,6 +63,7 @@ export function buildPrompt(x: ReviewInput): string {
     due: x.due,
     paid_to_this_payee_before: x.history.length ? x.history : "never",
     owner_known_payees: x.knownPayees,
+    ...(x.payeeRegistry ? { erc8004_payee_check: x.payeeRegistry } : {}),
   };
   const fence = (s: string) => clean(s).replace(/<\/?untrusted>/gi, "").slice(0, 600);
   const outside = [`Payee name on the bill: <untrusted>${fence(x.payeeName)}</untrusted>`];

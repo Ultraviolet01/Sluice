@@ -297,3 +297,8 @@ button { font: inherit; cursor: pointer; }
   .agent-status .live { font-size: 13px; }
   .agent-status button { padding: 6px 10px; font-size: 12px; flex-shrink: 0; }
 }
+
+/* Confirmation of Payee (ERC-8004) line under the payee address. */
+.cop { margin: -4px 0 10px; padding: 6px 10px; border-radius: 6px; background: var(--bg-subtle); color: var(--text-secondary); }
+.cop-ok { background: var(--accent-sluice-tint); color: var(--accent-sluice); }
+.cop-bad { background: rgba(200, 60, 60, .10); color: var(--status-critical); }

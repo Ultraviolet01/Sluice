@@ -138,3 +138,20 @@ test("past the deadline, no new bill is started", async () => {
   assert.equal(calls.length, 0);
   assert.ok(events.some((e) => e.text.includes("round time is up")));
 });
+
+test("a bill naming a registered business at another address goes to the owner, not paid", async () => {
+  const { chain, calls } = fakeChain([bill(0, OK, 80, "Northwind Hosting, new bank details")]);
+  await runVault(chain, VAULT, {
+    dryRun: false,
+    reviewer: reviewer({ verdict: "ok", reason: "x", by: "claude" }),
+    identities: [{ agentId: 1, name: "Northwind Hosting Ltd", wallet: "0x00000000000000000000000000000000000000aa" }],
+  });
+  assert.ok(!calls.some((c) => c.startsWith("pay")));
+  assert.ok(calls.some((c) => c.startsWith("propose 0/0") && /not confirmed|registered/.test(c)), calls.join("|"));
+});
+
+test("a confirmed payee is paid as usual", async () => {
+  const { chain, calls } = fakeChain([bill(0, OK, 80, "Northwind Hosting")]);
+  await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null), identities: [{ agentId: 1, name: "Northwind Hosting Ltd", wallet: OK }] });
+  assert.ok(calls.includes("pay 0/0"));
+});

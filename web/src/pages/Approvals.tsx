@@ -3,6 +3,7 @@ import { PageHead, Pill, Search, TxLink } from "../components.tsx";
 import { short } from "../chain.ts";
 import { ago, dayLabel, fmt, type ApprovalRow, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
+import { confirmPayee, copLine, useIdentities, type Identity } from "../payee.ts";
 import anchor from "../assets/icons/anchor.svg";
 import shield from "../assets/icons/shield.svg";
 import check from "../assets/icons/check.svg";
@@ -22,11 +23,13 @@ function noteText(a: ApprovalRow): string {
   return n && n.toLowerCase() !== a.why.toLowerCase() ? n[0].toUpperCase() + n.slice(1) : "";
 }
 
-function checks(m: Model, a: ApprovalRow) {
+function checks(m: Model, a: ApprovalRow, ids: Identity[] | null) {
   const p = m.payees.find((x) => x.addr.toLowerCase() === a.payee.toLowerCase());
   const s = m.session;
   const after = m.balance - a.amount;
+  const cop = ids ? copLine(confirmPayee(a.payee, a.label, ids), a.payee) : null;
   return [
+    ...(cop ? [{ label: cop.text, pass: cop.ok === true }] : []),
     { label: "Payee not on the blocklist", pass: !p?.blocked, fail: "Blocked: cannot be paid" },
     { label: "Payee on your approved list", pass: Boolean(p?.allowed) },
     { label: `Within the ${fmt(s?.perPaymentCap ?? 0n)} per-payment cap`, pass: s ? a.amount <= s.perPaymentCap : false },
@@ -39,6 +42,7 @@ export default function Approvals() {
   const { model: m, act, busy, isOwner } = useApp();
   const [tab, setTab] = useState<"waiting" | "decided">("waiting");
   const [q, setQ] = useState("");
+  const ids = useIdentities();
   // From a Telegram alert's "Approve in Sluice": open that payment.
   const [selected, setSelected] = useState<string | null>(() => {
     const q = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
@@ -131,8 +135,8 @@ export default function Approvals() {
             </div>
 
             <div>
-              <div className="row-between"><p className="ap-h grow"><img src={shield} width={20} height={20} alt="" />Policy checks</p><span className="faint xs">enforced by the vault</span></div>
-              {checks(m, current).map((c) => (
+              <div className="row-between"><p className="ap-h grow"><img src={shield} width={20} height={20} alt="" />Policy checks</p><span className="faint xs">enforced by the vault; payee checked against ERC-8004</span></div>
+              {checks(m, current, ids).map((c) => (
                 <div key={c.label} className="ap-check">
                   <span className={`ap-ic ${c.pass ? "ok" : "warn"}`}><img src={c.pass ? check : shieldSm} width={14} height={14} alt="" /></span>
                   <span className="grow small">{c.label}</span>

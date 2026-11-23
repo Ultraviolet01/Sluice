@@ -2,11 +2,13 @@
 // Run after `npx hardhat compile`: node scripts/verify-explorer.mjs
 import fs from "fs";
 const dir = "artifacts/build-info";
-const b = fs.readdirSync(dir).map((f) => JSON.parse(fs.readFileSync(`${dir}/${f}`))).find((x) => x.input.sources["contracts/SluiceVault.sol"]);
+const b = fs.readdirSync(dir).map((f) => JSON.parse(fs.readFileSync(`${dir}/${f}`))).find((x) => x.input.sources["contracts/SluiceVault.sol"] && x.input.sources["contracts/IdentityRegistry.sol"]);
 const d = JSON.parse(fs.readFileSync("deployments/aevumTestnet-deploy.json"));
 const demo = fs.existsSync("deployments/aevumTestnet-demo.json") ? JSON.parse(fs.readFileSync("deployments/aevumTestnet-demo.json")) : null;
 const input = { language: b.input.language, sources: b.input.sources, settings: { ...b.input.settings, outputSelection: { "*": { "*": ["abi", "evm.bytecode", "evm.deployedBytecode", "metadata"] } } } };
+const id = fs.existsSync("deployments/aevumTestnet-identity.json") ? JSON.parse(fs.readFileSync("deployments/aevumTestnet-identity.json")) : null;
 const jobs = [
+  ...(id ? [[id.registry, "contracts/IdentityRegistry.sol:IdentityRegistry"]] : []),
   [d.factory, "contracts/SluiceFactory.sol:SluiceFactory"],
   [d.vault, "contracts/SluiceVault.sol:SluiceVault"],
   ...(demo ? [[demo.vault, "contracts/SluiceVault.sol:SluiceVault"]] : []),

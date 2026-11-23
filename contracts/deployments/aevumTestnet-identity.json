@@ -1,0 +1,24 @@
+{
+  "registry": "0x6835B4258025A5c1723Cd236cBa5a37FFa789b2D",
+  "fromBlock": 3948560,
+  "vendors": [
+    {
+      "name": "Northwind Hosting Ltd",
+      "agentId": 1,
+      "wallet": "0xf7C00584EaeD46d4F2D7f305469A5c047972D23C",
+      "tx": "0x4648dfd4684a2a27374ea72c10976be367ec1ac4e5eeb62e9e3913755e8e5738"
+    },
+    {
+      "name": "Atlas Freight",
+      "agentId": 2,
+      "wallet": "0x8615863217650495716AE1272F19F6621dfAC28C",
+      "tx": "0x9c2e965a1907fe7f29cfa3f17afa0f59277480f2773645e04c33c101dab885fd"
+    },
+    {
+      "name": "Figma",
+      "agentId": 3,
+      "wallet": "0x631c4eca071367870Bd8cf94B68d46AfDF68AcB6",
+      "tx": "0x891fccbe065852beab2000db9da40ca961acc34a409db6144f431c86e7c1f26f"
+    }
+  ]
+}

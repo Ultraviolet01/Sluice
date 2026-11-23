@@ -29,7 +29,7 @@ Not just tests on a laptop: every function below was used for real on the live c
 | A stolen agent key | **28 of 28** attacks refused | [details](docs/VERIFIED.md#a-stolen-agent-key-against-the-live-vault) |
 | 101 junk proposals from the agent's key | Only 2 accepted (one per bill due); the owner could still act | [details](docs/VERIFIED.md#proposal-flood) |
 
-Both contracts' source code is verified on the explorer: [SluiceFactory](https://explorer-test.qday.info/address/0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9), [SluiceVault](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706).
+All three contracts' source code is verified on the explorer: [IdentityRegistry (ERC-8004)](https://explorer-test.qday.info/address/0x6835B4258025A5c1723Cd236cBa5a37FFa789b2D), [SluiceFactory](https://explorer-test.qday.info/address/0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9), [SluiceVault](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706).
 
 ## How it works
 
@@ -103,6 +103,7 @@ How it would reach them: a free tier for one company and a few bills, then a mon
 | Guardian | Optional second key (the Telegram bot) that can only make a vault stricter: pause, block a payee, reject a proposal. Never unpause, unblock, approve, change a limit or move money |
 | Ownership | Two-step hand-over to a new wallet or a Safe: the owner offers, the new owner accepts, and the owner can cancel before then |
 | Payees | New payees need the owner; the blocklist always wins, even on owner approval |
+| Confirmation of Payee | Before paying alone, the agent checks the bill's payee against the ERC-8004 Identity Registry. A bill naming a registered business at a different address, or a registered address under another name, goes to the owner instead. The bill form and Approvals show the result. Enforced by the agent, not the vault |
 | Human approval | Bills outside the limits are proposed with a note and wait for `approve` or `reject` |
 | Cash buffer | No agent payment may drop the vault below `cashBuffer` |
 | Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
@@ -118,7 +119,7 @@ You need Node.js 22.
 npm run verify
 ```
 
-Ends `VERIFY PASSED: contracts, agent, bot and web`: 59 contract tests (vault, factory, the attack suite and randomised runs), the agent's typecheck and 44 tests (including 2,000-case randomised checks), the bot's tests, the web tests, and the web build.
+Ends `VERIFY PASSED: contracts, agent, bot and web`: 64 contract tests (vault, factory, ERC-8004 registry, the attack suite and randomised runs), the agent's typecheck and 52 tests (including 2,000-case randomised checks), the bot's tests, the web tests, and the web build.
 
 ### See the agent work, locally
 
@@ -162,6 +163,7 @@ Demo data by default; add `?vault=0x…` to the address (`#/app/overview?vault=0
 | Factory | [`0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9`](https://explorer-test.qday.info/address/0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9) |
 | Vault (deployed directly) | [`0x15deBE3Bed0A0Bf705B6800d279f038097dc1706`](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706) |
 | Function-check company (every function, live) | [`0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3`](https://explorer-test.qday.info/address/0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3) |
+| ERC-8004 Identity Registry | [`0x6835B4258025A5c1723Cd236cBa5a37FFa789b2D`](https://explorer-test.qday.info/address/0x6835B4258025A5c1723Cd236cBa5a37FFa789b2D) (Aevum has no canonical deployment, so Sluice deployed one to the spec) |
 | Agent | `0x2ea4bf1d859918adf150F032F7E0C233f5498d3A` |
 | Telegram bot (guardian) | `0xc0940c4BAd322FBB09CB27ca0442e96f11C3AC29` |
 | Deployed at block | `3911562` |
@@ -268,12 +270,13 @@ Events, all with the owner's reason where one applies: `BillAdded`, `BillCancell
 ## Roadmap to mainnet
 
 1. **Per-payee caps** on chain.
-2. **Confirmation of Payee** through an ERC-8004 identity registry: a payee's address checked against its registered identity before the first payment.
-3. **Multisig owner** (a Safe), so approvals take more than one signature.
-4. **Gas paid in tUSD8** through an ERC-4337 paymaster, if Aevum runs a bundler.
-5. **Paying a payee on another chain** through the QDay Bridge, once its contracts and tokens are published (today it links only QDay Origin testnet and Aevum testnet). The vault's limits and the owner's approval still apply before anything leaves Aevum.
-6. **Earning on idle cash** through QDay's lending protocol (QLEAP) once it is live on Aevum: only money above the buffer and the next 14 days of bills, up to an owner-set cap.
-7. **An audit** before any mainnet money.
+
+Done since the first draft: **Confirmation of Payee** through ERC-8004 (see Guardrails).
+2. **Multisig owner** (a Safe), so approvals take more than one signature.
+3. **Gas paid in tUSD8** through an ERC-4337 paymaster, if Aevum runs a bundler.
+4. **Paying a payee on another chain** through the QDay Bridge, once its contracts and tokens are published (today it links only QDay Origin testnet and Aevum testnet). The vault's limits and the owner's approval still apply before anything leaves Aevum.
+5. **Earning on idle cash** through QDay's lending protocol (QLEAP) once it is live on Aevum: only money above the buffer and the next 14 days of bills, up to an owner-set cap.
+6. **An audit** before any mainnet money.
 
 Details: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
 

@@ -4,6 +4,7 @@ import { Modal } from "../components.tsx";
 import { toUnits, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
 import { readInvoice } from "../invoice.ts";
+import { confirmPayee, copLine, useIdentities } from "../payee.ts";
 
 /** Lists a bill on the vault (addBill), optionally drafted from an invoice by Claude. */
 export function BillForm({ onClose }: { onClose: () => void }) {
@@ -12,6 +13,8 @@ export function BillForm({ onClose }: { onClose: () => void }) {
   const [f, setF] = useState({ label: "", payee: "", amount: "", due: today, repeat: "0", invoiceText: "", critical: false });
   const [err, setErr] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
+  const ids = useIdentities();
+  const cop = ids && isAddress(f.payee) && f.label.trim() ? copLine(confirmPayee(f.payee, f.label, ids), f.payee) : null;
 
   async function readOne(file: File) {
     setReading(true);
@@ -65,6 +68,7 @@ export function BillForm({ onClose }: { onClose: () => void }) {
       </label>
       {field("label", "Name", { placeholder: "Northwind Hosting", maxLength: 64 })}
       {field("payee", "Payee address", { placeholder: "0x…", className: "mono" })}
+      {cop && <p className={`xs cop ${cop.ok === true ? "cop-ok" : cop.ok === false ? "cop-bad" : ""}`}>{cop.text}</p>}
       {field("amount", "Amount (tUSD8)", { placeholder: "80.00", inputMode: "decimal" })}
       {field("due", "First due date", { type: "date" })}
       <label className="form-row">

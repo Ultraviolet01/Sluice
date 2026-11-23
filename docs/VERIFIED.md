@@ -10,9 +10,10 @@ Each claim below was run against the live contracts; every transaction links to 
 |---|---|---|
 | SluiceVault (owner [`0xdE68a9391600B77E1337aeDd7ECFB86494eC7698`](https://explorer-test.qday.info/address/0xdE68a9391600B77E1337aeDd7ECFB86494eC7698)) | [`0x15deBE3Bed0A0Bf705B6800d279f038097dc1706`](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706) | [0x779e00f0…](https://explorer-test.qday.info/tx/0x779e00f0d24c2787119610318bfe05fc36861f3644e63beeaf5a60ac5d9d561a) |
 | SluiceFactory | [`0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9`](https://explorer-test.qday.info/address/0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9) | [0x566599fd…](https://explorer-test.qday.info/tx/0x566599fd5d42172a5044312ebe8f08cddf4c468138b2182c981cb8cdea967def) |
+| IdentityRegistry (ERC-8004) | [`0x6835B4258025A5c1723Cd236cBa5a37FFa789b2D`](https://explorer-test.qday.info/address/0x6835B4258025A5c1723Cd236cBa5a37FFa789b2D) | three vendors registered from their own wallets: Northwind Hosting Ltd #1, Atlas Freight #2, Figma #3 (`deployments/aevumTestnet-identity.json`) |
 | tUSD8 | [`0x456569838f1d43009A91ebA4263147Afd7233483`](https://explorer-test.qday.info/address/0x456569838f1d43009A91ebA4263147Afd7233483) | official, 6 decimals |
 
-The source of both contracts is verified on the explorer (`node scripts/verify-explorer.mjs` in `contracts/`): open either address and choose the Contract tab.
+The source of all three contracts is verified on the explorer (`node scripts/verify-explorer.mjs` in `contracts/`): open either address and choose the Contract tab.
 
 ## The demo company, set up through the factory
 
