@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
+import "./motion.css";
 import { Sidebar } from "./components.tsx";
 import { AppProvider, configuredVault, demoRequested, useApp } from "./state.tsx";
 import { FACTORY } from "./chain.ts";
@@ -71,12 +72,15 @@ function Dashboard({ page }: { page: string }) {
         {error && <div className="demo-banner warn">Last refresh failed: {error}</div>}
         <AcceptBanner />
         <WalletGasBanner />
-        {page === "overview" && <Overview />}
-        {page === "approvals" && <Approvals />}
-        {page === "activity" && <Activity />}
-        {page === "rules" && <Rules />}
-        {page === "wallets" && <Wallets />}
-        {page === "settings" && <Settings />}
+        {/* key: a new page mounts fresh, so it plays its entrance */}
+        <div key={page} className="page-in">
+          {page === "overview" && <Overview />}
+          {page === "approvals" && <Approvals />}
+          {page === "activity" && <Activity />}
+          {page === "rules" && <Rules />}
+          {page === "wallets" && <Wallets />}
+          {page === "settings" && <Settings />}
+        </div>
       </main>
       {msg && <div className="toast" role="status">{msg}</div>}
     </div>

@@ -1,0 +1,114 @@
+/* Motion for the whole site: calm, quick, and off for anyone who asks their
+   device for reduced motion (the last block). Durations stay under 400 ms so
+   nothing waits on an animation. */
+
+:root {
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+  --t-fast: 140ms;
+  --t-med: 240ms;
+  --t-slow: 380ms;
+}
+
+/* ------------------------------------------------------------ keyframes */
+@keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes modal-in { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes badge-pop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(63, 163, 154, .55); } 50% { box-shadow: 0 0 0 6px rgba(63, 163, 154, 0); } }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+/* ------------------------------------------------------------- sidebar */
+.nav { position: relative; }
+.nav a { position: relative; z-index: 1; transition: color var(--t-fast) ease, background-color var(--t-fast) ease; }
+/* The sliding highlight replaces the active item's own background. */
+.nav a.active { background: transparent; border-color: transparent; }
+.nav-ind {
+  position: absolute; left: 0; top: 0; z-index: 0;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 47, 58, .06);
+  transition: transform var(--t-slow) var(--ease-spring), width var(--t-med) var(--ease-out), height var(--t-med) var(--ease-out);
+  will-change: transform;
+}
+.nav a img, .nav a svg { transition: transform var(--t-med) var(--ease-spring); }
+.nav a:hover img, .nav a:hover svg { transform: translateX(2px) scale(1.06); }
+.nav a.active img, .nav a.active svg { transform: scale(1.05); }
+.nav .count { animation: badge-pop var(--t-slow) var(--ease-spring); }
+.agent-status .live i { animation: pulse-dot 2.4s ease-in-out infinite; }
+.agent-status.paused .live i { animation: none; }
+.agent-status button { transition: background-color var(--t-fast) ease, transform var(--t-fast) var(--ease-out); }
+.agent-status button:active { transform: scale(.97); }
+
+/* Company card and its menu. */
+.cs-card { transition: border-color var(--t-fast) ease, box-shadow var(--t-med) ease, transform var(--t-fast) var(--ease-out); }
+.cs-card:hover { box-shadow: 0 4px 14px rgba(15, 47, 58, .08); }
+.cs-card:active { transform: scale(.99); }
+.cs-chev { transition: transform var(--t-med) var(--ease-spring); }
+.cs-card.open .cs-chev { transform: rotate(180deg); }
+.cs-menu, .xp-menu { animation: pop-in var(--t-med) var(--ease-out); transform-origin: top center; }
+.cs-item { transition: background-color var(--t-fast) ease, transform var(--t-fast) var(--ease-out); }
+.cs-item:hover { transform: translateX(2px); }
+
+/* --------------------------------------------------------------- pages */
+.page-in > * { animation: rise-in var(--t-slow) var(--ease-out) both; }
+.page-in > *:nth-child(2) { animation-delay: 40ms; }
+.page-in > *:nth-child(3) { animation-delay: 80ms; }
+.page-in > *:nth-child(4) { animation-delay: 120ms; }
+.page-in > *:nth-child(5) { animation-delay: 160ms; }
+.page-in > *:nth-child(n + 6) { animation-delay: 200ms; }
+/* Rows of cards arrive one after another. */
+.page-in .card { animation: rise-in var(--t-slow) var(--ease-out) both; }
+.page-in * > .card:nth-child(2) { animation-delay: 60ms; }
+.page-in * > .card:nth-child(3) { animation-delay: 110ms; }
+.page-in * > .card:nth-child(4) { animation-delay: 160ms; }
+.demo-banner { animation: fade-in var(--t-med) ease both; }
+
+/* ------------------------------------------------------------- buttons */
+.btn, .pill-btn, .tabs button, .chip, .ob-company, .ld-pill, .ld-pill-outline {
+  transition: background-color var(--t-fast) ease, border-color var(--t-fast) ease, color var(--t-fast) ease,
+    box-shadow var(--t-med) ease, transform var(--t-fast) var(--ease-out), filter var(--t-fast) ease;
+}
+.btn:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 47, 58, .10); }
+.btn-primary:not(:disabled):hover { box-shadow: 0 6px 16px rgba(11, 92, 85, .28); }
+.btn-ghost:not(:disabled):hover { box-shadow: none; background: var(--bg-subtle); }
+.btn:not(:disabled):active, .pill-btn:active, .chip:active, .ld-pill:active, .ld-pill-outline:active { transform: translateY(0) scale(.97); box-shadow: none; }
+.ld-pill:hover, .ld-pill-outline:hover { transform: translateY(-1px); }
+.btn:focus-visible, .nav a:focus-visible, .cs-card:focus-visible, .tabs button:focus-visible, .chip:focus-visible, a:focus-visible {
+  outline: 2px solid var(--accent-sluice); outline-offset: 2px;
+}
+/* A button that is working shows it. */
+.btn[disabled] { transition: opacity var(--t-med) ease; }
+.tabs button.on { animation: pop-in var(--t-fast) var(--ease-out); }
+
+/* --------------------------------------------- cards, rows, small things */
+a.card, .ob-company, .tg-step, .dp-cards > div { transition: transform var(--t-med) var(--ease-out), box-shadow var(--t-med) ease, border-color var(--t-fast) ease; }
+a.card:hover, .ob-company:hover, .dp-cards > div:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 47, 58, .08); }
+table tbody tr { transition: background-color var(--t-fast) ease; }
+table tbody tr:hover { background: var(--bg-canvas); }
+.pill { transition: background-color var(--t-med) ease, color var(--t-med) ease; }
+progress, .bar > i, .bar span, [class*="progress"] > * { transition: width var(--t-slow) var(--ease-out); }
+input, select, textarea { transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease; }
+input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px var(--accent-sluice-tint); }
+
+/* ------------------------------------------------- overlays and toasts */
+.modal-bg { animation: fade-in var(--t-med) ease both; }
+.modal-bg > * { animation: modal-in var(--t-slow) var(--ease-spring) both; }
+.toast { animation: toast-in var(--t-slow) var(--ease-spring) both; }
+.ob-card { animation: modal-in var(--t-slow) var(--ease-spring) both; }
+
+/* A loading line ("Reading the vault…") shimmers instead of sitting still. */
+.main > div > p.muted:only-child {
+  background: linear-gradient(90deg, var(--text-tertiary) 0%, var(--text-primary) 50%, var(--text-tertiary) 100%);
+  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ------------------------------------------------------ reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important;
+    transition-duration: 1ms !important; scroll-behavior: auto !important;
+  }
+}

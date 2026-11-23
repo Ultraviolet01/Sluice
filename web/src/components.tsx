@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CompanySwitch } from "./pages/Panels.tsx";
 import type { Kind } from "./data.ts";
@@ -88,13 +88,28 @@ export function Sidebar({ route }: { route: string }) {
   const waiting = model.approvals.filter((a) => a.status === "waiting").length;
   const s = model.session;
   const live = s && s.active && s.expiresAt > Date.now() / 1000;
+  // The highlight behind the current page slides from the old item to the new one.
+  const navRef = useRef<HTMLElement>(null);
+  const [ind, setInd] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = navRef.current?.querySelector<HTMLElement>("a.active");
+    const place = () => el && setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+    place();
+    // Fonts and wrapping can move the item after the first paint: measure again then.
+    const ro = new ResizeObserver(place);
+    if (navRef.current) ro.observe(navRef.current);
+    if (el) ro.observe(el);
+    document.fonts?.ready.then(place).catch(() => {});
+    return () => ro.disconnect();
+  }, [route]);
   const togglePause = () =>
     act(model.paused ? "Payments resumed" : "All agent payments paused", { fn: model.paused ? "unpause" : "pause", args: [] }, (m) => ({ ...m, paused: !m.paused }));
   return (
     <aside className="sidebar">
       <a href="#/" className="brand display">SLUICE</a>
       <CompanySwitch />
-      <nav className="nav">
+      <nav className="nav" ref={navRef}>
+        {ind && <span className="nav-ind" aria-hidden="true" style={{ transform: `translate(${ind.left}px, ${ind.top}px)`, width: ind.width, height: ind.height }} />}
         {NAV.map((n) => (
           <a key={n.to} href={`#/app/${n.to}${window.location.hash.includes("?") ? "?" + window.location.hash.split("?")[1] : ""}`} className={route === n.to ? "active" : ""}>
             {n.icon ? <img src={n.icon} alt="" /> : <GearIcon />}
