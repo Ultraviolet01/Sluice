@@ -7,12 +7,19 @@ async function main() {
   const tusd8 = process.env.TUSD8_ADDRESS || "0x456569838f1d43009A91ebA4263147Afd7233483";
   const [deployer] = await ethers.getSigners();
   const usd = (n) => ethers.parseUnits(String(n), 6);
+  // The vault owner should be your own wallet, not the throwaway deploy key.
+  const owner = process.env.OWNER_ADDRESS;
+  if (!owner || !ethers.isAddress(owner)) throw new Error("Set OWNER_ADDRESS in .env to the wallet that will own the vault");
+  const gas = await ethers.provider.getBalance(deployer.address);
+  console.log("Deployer:", deployer.address, "balance:", ethers.formatEther(gas), "tQDAY");
+  if (gas === 0n) throw new Error("Deployer has no tQDAY. Claim gas at https://faucet.qday.info/en");
 
   const vault = await (await ethers.getContractFactory("SluiceVault")).deploy(
-    deployer.address, tusd8, usd(1), usd(2) // buffer 1 tUSD8, approval above 2 tUSD8 (faucet-sized)
+    owner, tusd8, usd(1), usd(2) // buffer 1 tUSD8, approval above 2 tUSD8 (faucet-sized)
   );
   await vault.waitForDeployment();
   console.log("SluiceVault:", await vault.getAddress());
+  console.log("Owner:      ", owner);
   console.log("Explorer:   ", `https://explorer-test.qday.info/address/${await vault.getAddress()}`);
 }
 
