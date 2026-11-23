@@ -176,7 +176,7 @@ export function CompanySwitch() {
   const { model: m, account, isOwner, connect, disconnect } = useApp();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [list, setList] = useState<{ vault: Address; name: string }[]>([]);
+  const [list, setList] = useState<{ vault: Address; name: string; offered?: boolean }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -196,7 +196,7 @@ export function CompanySwitch() {
   }, [open]);
   if (!m) return null;
 
-  const companies = m.live ? (list.some((c) => c.vault.toLowerCase() === m.vault.toLowerCase()) ? list : [{ vault: m.vault, name: m.name }, ...list]) : [{ vault: m.vault, name: m.name }];
+  const companies: { vault: Address; name: string; offered?: boolean }[] = m.live ? (list.some((c) => c.vault.toLowerCase() === m.vault.toLowerCase()) ? list : [{ vault: m.vault, name: m.name }, ...list]) : [{ vault: m.vault, name: m.name }];
   const go = (vault: Address) => {
     if (vault.toLowerCase() === m.vault.toLowerCase()) return setOpen(false);
     window.location.hash = `#/app/overview?vault=${vault}`;
@@ -229,7 +229,7 @@ export function CompanySwitch() {
             return (
               <button key={c.vault} role="menuitem" className={`cs-item${on ? " on" : ""}`} onClick={() => go(c.vault)} aria-current={on}>
                 <span className="cs-badge display">{(c.name.trim()[0] ?? "?").toUpperCase()}</span>
-                <span className="cs-text"><span className="cs-name">{c.name}</span><span className="cs-sub mono">{short(c.vault)}</span></span>
+                <span className="cs-text"><span className="cs-name">{c.name}</span><span className="cs-sub mono">{short(c.vault)}{c.offered ? " · offered to you" : ""}</span></span>
               </button>
             );
           })}

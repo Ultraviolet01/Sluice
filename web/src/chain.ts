@@ -96,6 +96,8 @@ export const FACTORY_ABI = parseAbi([
   "function createVault(string name, uint256 cashBuffer, uint256 approvalThreshold) returns (address)",
   "function vaultsCreatedBy(address) view returns (address[])",
   "function nameOf(address) view returns (string)",
+  "function vaultCount() view returns (uint256)",
+  "function vaultAt(uint256) view returns (address)",
   "event VaultCreated(address indexed creator, address indexed vault, string name)",
 ]);
 
@@ -114,10 +116,26 @@ export async function createCompany(account: Address, name: string, cashBuffer: 
 }
 
 /** The companies an account created, with their names. */
-export async function myCompanies(account: Address): Promise<{ vault: Address; name: string }[]> {
+/**
+ * The companies this wallet owns now, whoever created them (a vault handed over
+ * by offer and accept counts), plus any offered to it and waiting to be accepted.
+ * A company it created and then handed to someone else is not listed.
+ */
+export async function myCompanies(account: Address): Promise<{ vault: Address; name: string; offered?: boolean }[]> {
   if (!FACTORY) return [];
-  const vaults = (await publicClient.readContract({ address: FACTORY, abi: FACTORY_ABI, functionName: "vaultsCreatedBy", args: [account] })) as Address[];
-  return Promise.all(vaults.map(async (v) => ({ vault: v, name: (await publicClient.readContract({ address: FACTORY, abi: FACTORY_ABI, functionName: "nameOf", args: [v] })) as string })));
+  const me = account.toLowerCase();
+  const read = <T,>(address: Address, abi: typeof FACTORY_ABI | typeof VAULT_ABI, functionName: string, args: unknown[] = []) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    publicClient.readContract({ address, abi, functionName, args } as any) as Promise<T>;
+  const count = Number(await read<bigint>(FACTORY, FACTORY_ABI, "vaultCount"));
+  const all = await Promise.all(Array.from({ length: count }, (_, i) => read<Address>(FACTORY, FACTORY_ABI, "vaultAt", [BigInt(i)])));
+  const rows = await Promise.all(all.map(async (vault) => {
+    const [owner, pending] = await Promise.all([read<Address>(vault, VAULT_ABI, "owner"), read<Address>(vault, VAULT_ABI, "pendingOwner").catch(() => "0x0" as Address)]);
+    const mine = owner.toLowerCase() === me, offered = pending.toLowerCase() === me;
+    if (!mine && !offered) return null;
+    return { vault, name: await read<string>(FACTORY, FACTORY_ABI, "nameOf", [vault]), ...(mine ? {} : { offered: true }) };
+  }));
+  return rows.filter((r): r is NonNullable<typeof r> => r !== null);
 }
 
 export async function companyName(vault: Address): Promise<string | null> {

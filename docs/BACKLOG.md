@@ -33,11 +33,10 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 | Dark mode | A theme toggle on the dashboard | Small |
 | Calendar months and years | Monthly bills on the same date each month instead of every 30 days | Medium |
 | Excel export | A workbook with summary, activity, bills and ledger sheets (CSV exists) | Medium |
-| Companies you own by transfer | "Your companies" lists vaults your wallet created; one handed to you shows when opened by its address. Listing them needs the factory to track current owners | Small |
 
 ## Done since the last review
 
-Telegram bot (Railway): alerts to each founder, read commands, pause / block / reject as guardian · Agent gas alerted to the operator, founders warned about their own wallet's gas · release a rejected bill · hand the vault to a new owner or a Safe (offer, accept, cancel) · First-visit onboarding (connect, name your first company, open it) · Deposit from the dashboard · Get started checklist · randomised tests (agent and contract) · several invoices at once · several payees at once · a reason on every rule change, on chain.
+"Your companies" lists every company your wallet owns, including ones handed to you · Telegram bot (Railway): alerts to each founder, read commands, pause / block / reject as guardian · Agent gas alerted to the operator, founders warned about their own wallet's gas · release a rejected bill · hand the vault to a new owner or a Safe (offer, accept, cancel) · First-visit onboarding (connect, name your first company, open it) · Deposit from the dashboard · Get started checklist · randomised tests (agent and contract) · several invoices at once · several payees at once · a reason on every rule change, on chain.
 
 ## Roadmap to mainnet
 

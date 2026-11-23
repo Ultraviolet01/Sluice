@@ -15,7 +15,7 @@ const open = (vault: Address) => {
 
 export default function Onboarding() {
   const { account, connect, disconnect } = useApp();
-  const [companies, setCompanies] = useState<{ vault: Address; name: string }[] | null>(null);
+  const [companies, setCompanies] = useState<{ vault: Address; name: string; offered?: boolean }[] | null>(null);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -23,8 +23,8 @@ export default function Onboarding() {
     setCompanies(null);
     myCompanies(account)
       .then((list) => {
-        // One company: open it, as Keel does. Several: let the owner choose.
-        if (list.length === 1) open(list[0].vault);
+        // One company: open it. Several: let the owner choose.
+        if (list.length === 1 && !list[0].offered) open(list[0].vault);
         else setCompanies(list);
       })
       .catch(() => setCompanies([]));
@@ -63,7 +63,7 @@ export default function Onboarding() {
             {companies.map((c) => (
               <button key={c.vault} className="ob-company" onClick={() => open(c.vault)}>
                 <span className="t15">{c.name}</span>
-                <span className="mono faint xs">{short(c.vault)}</span>
+                <span className="mono faint xs">{short(c.vault)}{c.offered ? " · offered to you, open it to accept" : ""}</span>
               </button>
             ))}
           </div>
