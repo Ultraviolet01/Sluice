@@ -78,6 +78,10 @@ cd agent && npm install && SLUICE_LOCAL=1 AEVUM_RPC_URL=http://127.0.0.1:8545 SL
 
 You see Northwind paid alone, Atlas proposed (over the cap), Figma proposed (new payee), the "new bank details" bill refused (blocklisted), and December left for later. Run it again: nothing new happens, because the vault remembers.
 
+### On Aevum Testnet
+
+After deploying: `npm run demo:setup`, `npm run attacks` and `npm run flood` in `contracts/` (each with `-- --network aevumTestnet`) set up the demo company and run the stolen-key checks against it; `npm run demo` in `agent/` tells one round step by step; `node scripts/verified.mjs` writes [docs/VERIFIED.md](docs/VERIFIED.md) from their records.
+
 ### The dashboard
 
 ```bash

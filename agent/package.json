@@ -9,7 +9,8 @@
     "agent": "tsx src/main.ts",
     "dry-run": "tsx src/main.ts --dry-run",
     "test": "tsx --test src/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx src/demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",

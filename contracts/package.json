@@ -5,7 +5,10 @@
   "scripts": {
     "test": "hardhat test",
     "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.js --network aevumTestnet"
+    "deploy": "hardhat run scripts/deploy.js --network aevumTestnet",
+    "demo:setup": "hardhat run scripts/setup-demo.js",
+    "attacks": "hardhat run scripts/live-attacks.js",
+    "flood": "hardhat run scripts/flood.js"
   },
   "license": "MIT",
   "devDependencies": {

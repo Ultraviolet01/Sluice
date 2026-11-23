@@ -13,11 +13,11 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 | 3 | Agent schedule | Set `SLUICE_FACTORY` (and/or `SLUICE_VAULTS`), `SLUICE_FROM_BLOCK`, `SLUICE_APP_URL` as Actions variables; merge to `main` (schedules run only from the default branch); make the repository public | Merge, visibility |
 | 4 | Claude and Telegram | `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` as Actions secrets; `ANTHROPIC_API_KEY` on the web host for the invoice reader | The keys, entered in settings (never in chat) |
 | 5 | Point the website at Aevum | Build with `VITE_FACTORY_ADDRESS`, `VITE_AGENT_ADDRESS`, `VITE_VAULT_ADDRESS`, `VITE_FROM_BLOCK`; choose a host | Where to host |
-| 6 | Demo company on testnet | A script like `contracts/scripts/local-demo.js` for Aevum: payees, the five demo bills (one paid, two proposed, one blocklisted scam, one later), funded with faucet tUSD8 | — |
-| 7 | Live attack run | The 22 stolen-key attacks from `contracts/test/attacks.test.js`, run against the deployed vault with real transactions, each refusal recorded | — |
-| 8 | Proposal flood check | A stolen key files as many proposals as it can; confirm they stay bounded by the owner's listed bills and the owner can still act | — |
-| 9 | `docs/VERIFIED.md` | Every claim checked on Aevum, each with its transaction link: deploy, factory sign-up, a bill paid alone, one approved, one refused, a rotated key refused, a Telegram alert received | — |
-| 10 | Narrated demo | `npm run demo` in `agent/`: one round explained step by step against the testnet demo company, for the video | — |
+| 6 | Demo company on testnet | **Script ready**: `cd contracts && npm run demo:setup -- --network aevumTestnet` creates it through the factory: payees, the five demo bills, the agent's session, 20 tUSD8 | Faucet tUSD8 in the deploy wallet |
+| 7 | Live attack run | **Script ready**: `npm run attacks -- --network aevumTestnet`: 30 checks against the demo company, refusals plus real allowed transactions (30/30 locally) | Agent key with a little tQDAY |
+| 8 | Proposal flood check | **Script ready**: `npm run flood -- --network aevumTestnet` (locally: 1 accepted, 200 refused, owner unaffected) | — |
+| 9 | `docs/VERIFIED.md` | **Generator ready**: `node scripts/verified.mjs` writes it from the records of steps 1, 6, 7 and 8, with explorer links. Add by hand: an Actions run log, a Telegram alert, a dashboard sign-up | — |
+| 10 | Narrated demo | **Script ready**: `cd agent && npm run demo` tells one round step by step on the demo company (`-- --dry-run` signs nothing) | Agent key |
 | 11 | Key scripts | `new-agent-key` (generate) and `rotate-agent-key` (grant the new key on each vault; the old one stops at once) | — |
 | 12 | Demo video | Record with `docs/DEMO.md`; link it without a login | Recording |
 | 13 | Submission checklist | Fill the open rows in `docs/JUDGING.md`: vault and factory addresses, explorer links, hosted app link, video | — |

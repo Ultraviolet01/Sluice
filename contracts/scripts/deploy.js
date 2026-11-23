@@ -1,6 +1,7 @@
 // Deploys a SluiceVault (owned by OWNER_ADDRESS) and the SluiceFactory to Aevum Testnet, against the official tUSD8.
 // Usage: npx hardhat run scripts/deploy.js --network aevumTestnet
 const { ethers, network } = require("hardhat");
+const { save } = require("./lib/common.js");
 
 async function main() {
   if (network.config.chainId !== 44005) throw new Error("Refusing to deploy: not Aevum Testnet (44005)");
@@ -24,6 +25,19 @@ async function main() {
   console.log("SluiceVault:", await vault.getAddress());
   console.log("Owner:      ", owner);
   console.log("Factory:    ", await factory.getAddress());
+  const block = (await vault.deploymentTransaction().wait()).blockNumber;
+  const file = save("deploy", {
+    network: network.name,
+    vault: await vault.getAddress(),
+    vaultTx: vault.deploymentTransaction().hash,
+    factory: await factory.getAddress(),
+    factoryTx: factory.deploymentTransaction().hash,
+    owner,
+    token: tusd8,
+    fromBlock: block,
+    at: new Date().toISOString(),
+  });
+  console.log("Saved:      ", file);
   console.log("Explorer:   ", `https://explorer-test.qday.info/address/${await vault.getAddress()}`);
 }
 
