@@ -28,7 +28,11 @@ flowchart LR
 
 1. **The owner lists bills and sets the line**: per-payment cap, rolling 24-hour budget, cash buffer, approval threshold, approved and blocked payees, and a session for the agent with an expiry.
 2. **The agent runs every 15 minutes.** It forecasts the next 14 days, asks the vault about each bill that's due, and pays what fits. A bill that's over the line, to a new payee, or more than 25% above that payee's usual amount goes to the owner as a proposal. Before paying anything alone, an injection guard and then Claude Haiku 5.5 take a second look, and can only make the decision stricter.
-3. **The owner signs the big ones** in the dashboard, with the reasons and policy checks laid out. Every payment and rule change is a receipt on chain.
+3. **The owner signs the big ones** in the dashboard, with the reasons and policy checks laid out, and gets a Telegram message when something needs them. Every payment and rule change is a receipt on chain.
+
+A bill that would break the cash buffer but isn't due yet is held until it is: money may come in first. Bills marked **critical** (payroll, rent) are paid first and never held. Each proposal's reason is written in plain English by Claude Haiku 5.5 from the agent's own facts.
+
+Anyone can **create their company's vault** from the dashboard in one signature (`SluiceFactory`), and **import** up to 50 bills at once from a CSV.
 
 ## Guardrails (enforced on-chain)
 
@@ -44,7 +48,7 @@ flowchart LR
 | Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
 | Receipts | `BillPaid`, `PaymentProposed`, `PaymentRejected`, and `PolicyChanged` with old and new values |
 
-20 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
+21 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Check it
 
@@ -54,7 +58,7 @@ You need Node.js 22.
 npm run verify
 ```
 
-One line per check, ending `VERIFY PASSED: 5 passed, 0 failed`: 39 contract tests (including the attack suite), the agent's typecheck and 22 tests, the invoice reader's tests, and the web build.
+One line per check, ending `VERIFY PASSED: 5 passed, 0 failed`: 44 contract tests (vault, factory and the attack suite), the agent's typecheck and 31 tests, the web tests (invoice reader and bill import), and the web build.
 
 ### See the agent work, locally
 
@@ -91,7 +95,7 @@ Demo data by default; add `?vault=0x…` to the address (`#/app/overview?vault=0
 | Explorer | https://explorer-test.qday.info/ |
 | tUSD8 | `0x456569838f1d43009A91ebA4263147Afd7233483` (6 decimals: `1 tUSD8 = 1_000_000`) |
 | Faucet | https://faucet.qday.info/en |
-| Vault | Deployment pending |
+| Vault and factory | Deployment pending |
 
 Deploy (needs tQDAY for gas):
 
@@ -109,7 +113,7 @@ npm run deploy
 
 | Folder | What |
 |---|---|
-| `contracts/` | `SluiceVault.sol`, tests and attack suite, deploy and local demo scripts (Hardhat) |
+| `contracts/` | `SluiceVault.sol`, `SluiceFactory.sol`, tests and attack suite, deploy and local demo scripts (Hardhat) |
 | `agent/` | The agent: observe, forecast, decide, review, act, learn. See [agent/README.md](agent/README.md) |
 | `web/` | Landing page, owner dashboard, and the invoice reader function. See [web/README.md](web/README.md) |
 | `docs/` | [Security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md) |

@@ -15,9 +15,9 @@ async function deploy() {
   const now = await time.latest();
   await vault.grantSession(agent.address, usd(500), usd(600), now + 30 * DAY);
   await vault.setPayeeAllowed(payee.address, true);
-  await vault.addBill(payee.address, usd(80), now, 0, "Northwind Hosting"); // 0
-  await vault.addBill(payee.address, usd(800), now, 0, "Big bill"); // 1
-  await vault.addBill(payee.address, usd(20), now, 1, "Daily SaaS"); // 2 (every day)
+  await vault.addBill(payee.address, usd(80), now, 0, false, "Northwind Hosting"); // 0
+  await vault.addBill(payee.address, usd(800), now, 0, false, "Big bill"); // 1
+  await vault.addBill(payee.address, usd(20), now, 1, false, "Daily SaaS"); // 2 (every day)
   return { vault, token, owner, agent, payee, thief, outsider, now };
 }
 
@@ -26,7 +26,8 @@ describe("Attacks with a stolen agent key", () => {
     ["grant itself a bigger session", (v, a) => v.connect(a).grantSession(a.address, usd(1e6), usd(1e6), 9_999_999_999)],
     ["allowlist its own address", (v, a, t) => v.connect(a).setPayeeAllowed(t.address, true)],
     ["unblock a payee", (v, a, t) => v.connect(a).setPayeeBlocked(t.address, false)],
-    ["list a bill to itself", (v, a, t) => v.connect(a).addBill(t.address, usd(1000), 1, 0, "x")],
+    ["list a bill to itself", (v, a, t) => v.connect(a).addBill(t.address, usd(1000), 1, 0, false, "x")],
+    ["bulk-list bills to itself", (v, a, t) => v.connect(a).addBills([{ payee: t.address, amount: usd(1000), firstDue: 1, intervalDays: 0, critical: true, label: "x" }])],
     ["approve its own proposal", (v, a) => v.connect(a).approve(1, 0)],
     ["withdraw the vault", (v, a, t) => v.connect(a).withdraw(t.address, usd(1))],
     ["lower the cash buffer", (v, a) => v.connect(a).setCashBuffer(0)],

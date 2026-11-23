@@ -13,3 +13,4 @@ contracts/coverage/
 coverage.json
 .DS_Store
 web/dist/
+.sluice-alerts.json

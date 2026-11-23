@@ -8,12 +8,15 @@ Settles the bills the owner listed on a SluiceVault, inside the vault's limits, 
 |---|---|---|
 | Observe | Balance, cash buffer, the agent's session and 24h spend, every bill, past receipts | `src/chain.ts` |
 | Forecast | The next 14 days, and the first day the balance would fall below the buffer | `forecast`, `firstShortfall` in `src/brain.ts` |
-| Decide | For each bill period that is due: ask the vault's `checkPayment`, then pay, propose, refuse or wait. A bill more than 25% above that payee's last three goes to the owner | `decide`, `isSpike` |
+| Decide | Critical bills first, then oldest due. For each: ask the vault's `checkPayment`, then pay, propose, refuse, wait, or hold a bill that would break the cash buffer until it is due (never a critical one). A bill more than 25% above that payee's last three goes to the owner | `decide`, `workOrder`, `isSpike` |
 | Review | Before paying alone: the injection guard, then Claude. Both can only make the decision stricter (pay → propose or refuse) | `src/guard.ts`, `src/review.ts` |
-| Act | `pay(billId, period)` or `propose(billId, period, note)`, simulated first, then sent | `src/loop.ts` |
+| Act | `pay(billId, period)` or `propose(billId, period, note)`, simulated first, then sent. Claude Haiku 5.5 writes the note from the agent's own facts (never bill or invoice text); a template if it can't | `src/loop.ts`, `src/explain.ts` |
+| Alert | A Telegram message when a bill goes to the owner, a payment is refused, a shortfall is ahead, the session is about to expire, or a round fails. Each situation is sent once | `src/notify.ts` |
 | Learn | After three rising owner approvals for one payee, drafts a higher cap. The owner decides | `draftCap` |
 
 The vault re-checks everything on chain; the agent can only ever be stricter than the vault.
+
+The agent keeps no database. To send each Telegram alert once, it remembers what it sent in `.sluice-alerts.json`, which the workflow keeps between runs with the GitHub Actions cache; losing it only means one repeated alert.
 
 ## Run it
 
@@ -51,5 +54,8 @@ In the GitHub repository, **Settings → Secrets and variables → Actions**:
 | Secret | `ANTHROPIC_API_KEY` | Optional, for the Claude review |
 | Variable | `SLUICE_VAULTS` | Comma-separated vault addresses |
 | Variable | `SLUICE_FROM_BLOCK` | Optional, the vault's deployment block |
+| Secret | `TELEGRAM_BOT_TOKEN` | Optional, for alerts: create a bot with @BotFather |
+| Secret | `TELEGRAM_CHAT_ID` | Optional, the chat to alert: message your bot, then read `chat.id` from `https://api.telegram.org/bot<token>/getUpdates` |
+| Variable | `SLUICE_APP_URL` | Optional, the dashboard's address, linked from alerts |
 
 Until `SLUICE_VAULTS` and `AGENT_PRIVATE_KEY` are set, each scheduled run skips with a notice. Run it by hand from the **Actions** tab (`agent` → **Run workflow**), with **dry run** ticked to sign nothing. The agent's address needs a little tQDAY for gas.

@@ -3,7 +3,7 @@
 
 import { decodeEventLog, hexToString, type Address, type Log } from "viem";
 import { REASON_TEXT, Reason, forecast as runForecast, upcoming as runUpcoming, type Bill } from "../../agent/src/brain.ts";
-import { VAULT_ABI, publicClient } from "./chain.ts";
+import { VAULT_ABI, companyName, publicClient } from "./chain.ts";
 import type { Kind } from "./data.ts";
 
 export interface Session {
@@ -80,8 +80,8 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
 
   const bills: Bill[] = [];
   for (let i = 0; i < Number(count); i++) {
-    const b = await read<{ payee: Address; amount: bigint; firstDue: bigint; intervalDays: number; active: boolean; label: string }>("getBill", [BigInt(i)]);
-    bills.push({ id: i, payee: b.payee, amount: b.amount, firstDue: Number(b.firstDue), intervalDays: Number(b.intervalDays), active: b.active, label: b.label });
+    const b = await read<{ payee: Address; amount: bigint; firstDue: bigint; intervalDays: number; active: boolean; critical: boolean; label: string }>("getBill", [BigInt(i)]);
+    bills.push({ id: i, payee: b.payee, amount: b.amount, firstDue: Number(b.firstDue), intervalDays: Number(b.intervalDays), active: b.active, critical: b.critical, label: b.label });
   }
 
   // Every event the vault ever emitted, oldest first, with block times.
@@ -199,7 +199,7 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
 
   return {
     live: true,
-    name: import.meta.env.VITE_COMPANY_NAME || "Your company",
+    name: (await companyName(vault)) || import.meta.env.VITE_COMPANY_NAME || "Your company",
     vault, owner, paused, balance, cashBuffer, threshold, session, bills, upcoming, forecast,
     approvals: [...latest.values()].sort((a, b) => b.createdAt - a.createdAt),
     activity,
@@ -207,19 +207,8 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   };
 }
 
-export function fmt(units: bigint, decimals = 6): string {
-  const neg = units < 0n;
-  const u = neg ? -units : units;
-  const whole = u / 10n ** BigInt(decimals);
-  const frac = (u % 10n ** BigInt(decimals)).toString().padStart(decimals, "0").slice(0, 2);
-  return `${neg ? "−" : ""}${whole.toLocaleString("en-US")}.${frac}`;
-}
-
-export const toUnits = (text: string, decimals = 6): bigint => {
-  const [w, f = ""] = text.trim().replace(/,/g, "").split(".");
-  if (!/^\d+$/.test(w || "0") || !/^\d*$/.test(f)) throw new Error("Enter a number");
-  return BigInt(w || "0") * 10n ** BigInt(decimals) + BigInt((f + "0".repeat(decimals)).slice(0, decimals) || "0");
-};
+export { fmt, toUnits } from "./units.ts";
+import { fmt } from "./units.ts";
 
 export const when = (t: number) =>
   new Date(t * 1000).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });

@@ -5,6 +5,7 @@ import { EXPLORER, short } from "../chain.ts";
 import { fmt, toUnits, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
 import { BillForm } from "./BillForm.tsx";
+import { ImportPanel } from "./Panels.tsx";
 import "./rules.css";
 
 const every = (d: number) => (d === 0 ? "once" : d === 7 ? "weekly" : d === 14 ? "every 2 weeks" : d === 30 ? "every 30 days" : d === 365 ? "yearly" : `every ${d} days`);
@@ -46,7 +47,7 @@ export default function Rules() {
   const { model: m, act, busy } = useApp();
   const [buffer, setBuffer] = useState("");
   const [threshold, setThreshold] = useState("");
-  const [modal, setModal] = useState<"bill" | "payee" | null>(null);
+  const [modal, setModal] = useState<"bill" | "payee" | "import" | null>(null);
   useEffect(() => {
     if (!m) return;
     setBuffer(fmt(m.cashBuffer).replace(/,/g, ""));
@@ -128,12 +129,13 @@ export default function Rules() {
       <section className="card">
         <div className="row-between" style={{ paddingBottom: 8 }}>
           <div className="grow"><p className="card-title">Bills</p><p className="card-sub">The only payments Sluice can make: this payee, this amount, this schedule</p></div>
+          <button className="btn btn-secondary" onClick={() => setModal("import")}>Import bills</button>
           <button className="btn btn-primary" onClick={() => setModal("bill")}>List a bill</button>
         </div>
         {m.bills.length === 0 && <p className="muted small">No bills yet.</p>}
         {m.bills.map((b) => (
           <div key={b.id} className="ru-row">
-            <div className="grow"><p className="small w500">#{b.id} {b.label}</p><p className="mono faint xs">{short(b.payee)} · {every(b.intervalDays)} from {new Date(b.firstDue * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p></div>
+            <div className="grow"><p className="small w500">#{b.id} {b.label}{b.critical && <span className="pill pill-approval" style={{ marginLeft: 8 }}>Critical</span>}</p><p className="mono faint xs">{short(b.payee)} · {every(b.intervalDays)} from {new Date(b.firstDue * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p></div>
             <span className="small w500">{fmt(b.amount)} tUSD8</span>
             {b.active ? <button className="btn btn-ghost ac-sm" onClick={() => cancelBill(b.id)}>Cancel</button> : <Pill kind="neutral">Cancelled</Pill>}
           </div>
@@ -154,6 +156,7 @@ export default function Rules() {
 
       {modal === "bill" && <BillForm onClose={() => setModal(null)} />}
       {modal === "payee" && <PayeeForm onClose={() => setModal(null)} />}
+      {modal === "import" && <ImportPanel onClose={() => setModal(null)} />}
     </>
   );
 }

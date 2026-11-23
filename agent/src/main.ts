@@ -8,6 +8,9 @@
 //   ANTHROPIC_API_KEY    optional, enables the Claude review
 //   SLUICE_FROM_BLOCK    optional, first block to read receipts from
 //   SLUICE_LOCAL=1       optional, use a local Hardhat node instead of Aevum
+//   TELEGRAM_BOT_TOKEN   optional, with TELEGRAM_CHAT_ID: alerts when something needs the owner
+//   SLUICE_APP_URL       optional, the dashboard's address, linked from alerts
+//   SLUICE_ALERT_STATE   optional, file remembering alerts already sent (default .sluice-alerts.json)
 // Flags: --dry-run decides everything and signs nothing.
 
 import { appendFileSync } from "node:fs";
@@ -16,6 +19,8 @@ import { hardhat } from "viem/chains";
 import { aevumTestnet, viemChain } from "./chain.ts";
 import { runVault, type Event } from "./loop.ts";
 import { makeReviewer } from "./review.ts";
+import { explain } from "./explain.ts";
+import { format, fresh, loadSent, saveSent, send, type Alert } from "./notify.ts";
 
 const EXPLORER = process.env.SLUICE_LOCAL === "1" ? "" : "https://explorer-test.qday.info";
 
@@ -43,15 +48,24 @@ async function main() {
   const reviewer = makeReviewer(process.env.ANTHROPIC_API_KEY);
   console.log(`Sluice agent ${chain.agent}${dryRun ? " (dry run: signs nothing)" : ""}; Claude review ${process.env.ANTHROPIC_API_KEY ? "on" : "off"}`);
 
+  const tg = process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID ? { token: process.env.TELEGRAM_BOT_TOKEN, chatId: process.env.TELEGRAM_CHAT_ID } : null;
+  const stateFile = process.env.SLUICE_ALERT_STATE || ".sluice-alerts.json";
+  let sent = loadSent(stateFile);
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  console.log(`Telegram alerts ${tg ? "on" : "off"}`);
+
   const summary: string[] = [];
   let failed = false;
   for (const vault of vaults as Address[]) {
     console.log(`\n== ${vault}`);
     summary.push(`### ${vault}`);
+    const alerts: Alert[] = [];
     try {
       await runVault(chain, vault, {
         dryRun,
         reviewer,
+        explain: async (x) => (await explain(anthropicKey, x)).text,
+        alert: (a) => alerts.push(a),
         say: (e: Event) => {
           const link = e.tx ? (EXPLORER ? ` ${EXPLORER}/tx/${e.tx}` : ` ${e.tx}`) : "";
           console.log(`[${e.step}] ${e.text}${link}`);
@@ -63,8 +77,19 @@ async function main() {
       failed = true;
       console.error(`[error] ${(err as Error).message}`);
       summary.push(`- **error** ${(err as Error).message}`);
+      alerts.push({ key: `crash:${vault}:${new Date().toISOString().slice(0, 10)}`, text: `The agent could not finish a round: ${(err as Error).message.slice(0, 160)}` });
+    }
+    const { todo, sent: kept } = fresh(alerts, sent);
+    sent = kept;
+    if (todo.length) {
+      const app = process.env.SLUICE_APP_URL ? `${process.env.SLUICE_APP_URL.replace(/\/$/, "")}/#/app/approvals?vault=${vault}` : undefined;
+      const text = format(`${vault.slice(0, 6)}…${vault.slice(-4)}`, todo.map((a) => ({ ...a, link: a.link && EXPLORER ? `${EXPLORER}/tx/${a.link}` : undefined })), app);
+      if (dryRun || !tg) console.log(`[alert] ${todo.length} new${tg ? " (dry run: not sent)" : " (Telegram not set up)"}:\n${todo.map((a) => `  - ${a.text}`).join("\n")}`);
+      else if (await send(tg, text)) for (const a of todo) sent[a.key] = Date.now();
+      else console.error("[alert] Telegram send failed");
     }
   }
+  if (!dryRun) saveSent(stateFile, sent);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join("\n") + "\n");
   if (failed) process.exitCode = 1;
 }

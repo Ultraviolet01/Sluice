@@ -1,4 +1,4 @@
-// Deploys SluiceVault to Aevum Testnet against the official tUSD8.
+// Deploys a SluiceVault (owned by OWNER_ADDRESS) and the SluiceFactory to Aevum Testnet, against the official tUSD8.
 // Usage: npx hardhat run scripts/deploy.js --network aevumTestnet
 const { ethers, network } = require("hardhat");
 
@@ -18,8 +18,12 @@ async function main() {
     owner, tusd8, usd(1), usd(2) // buffer 1 tUSD8, approval above 2 tUSD8 (faucet-sized)
   );
   await vault.waitForDeployment();
+  // The factory lets anyone create their own company's vault from the app.
+  const factory = await (await ethers.getContractFactory("SluiceFactory")).deploy(tusd8);
+  await factory.waitForDeployment();
   console.log("SluiceVault:", await vault.getAddress());
   console.log("Owner:      ", owner);
+  console.log("Factory:    ", await factory.getAddress());
   console.log("Explorer:   ", `https://explorer-test.qday.info/address/${await vault.getAddress()}`);
 }
 

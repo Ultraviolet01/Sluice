@@ -4,24 +4,24 @@ import "./landing.css";
 const V = "contracts/contracts/SluiceVault.sol";
 
 const WHO = [
-  ["List or cancel bills", "Yes", "No", 197],
-  ["Approve or reject a proposal", "Yes", "No", 226],
-  ["Set caps, buffer, threshold, payee lists", "Yes", "No", 181],
-  ["Grant or revoke the agent's session", "Yes", "No", 161],
-  ["Pause and resume", "Yes", "No", 244],
-  ["Withdraw (even while paused)", "Yes", "No", 253],
-  ["Settle a listed bill inside the limits", "—", "Yes", 263],
-  ["File a bill for the owner", "—", "Yes", 276],
+  ["List or cancel bills", "Yes", "No", 209],
+  ["Approve or reject a proposal", "Yes", "No", 255],
+  ["Set caps, buffer, threshold, payee lists", "Yes", "No", 193],
+  ["Grant or revoke the agent's session", "Yes", "No", 173],
+  ["Pause and resume", "Yes", "No", 273],
+  ["Withdraw (even while paused)", "Yes", "No", 282],
+  ["Settle a listed bill inside the limits", "—", "Yes", 292],
+  ["File a bill for the owner", "—", "Yes", 305],
 ] as const;
 
 const GUARDS = [
-  ["Bills only", "pay(bill, period) takes no payee and no amount. The vault pays the bill's own payee its own amount, and only the owner can list a bill.", 263],
-  ["Once per period", "Each bill period settles at most once. A rejected one stays closed until the owner releases it.", 298],
-  ["Not early", "A period can't be settled more than 3 days before it's due.", 296],
-  ["Blocklist wins", "A blocked payee is refused for the agent and for the owner's approval alike.", 300],
-  ["Rolling 24-hour cap", "Sums the agent's own payments over the last 24 hours, not a calendar day, so midnight can't be gamed.", 305],
-  ["Cash buffer", "No agent payment may leave the vault below the owner's buffer.", 307],
-  ["Payment ring", "At most 32 agent payments in 24 hours; the 33rd is refused instead of overwriting the record the cap relies on.", 345],
+  ["Bills only", "pay(bill, period) takes no payee and no amount. The vault pays the bill's own payee its own amount, and only the owner can list a bill.", 292],
+  ["Once per period", "Each bill period settles at most once. A rejected one stays closed until the owner releases it.", 327],
+  ["Not early", "A period can't be settled more than 3 days before it's due.", 325],
+  ["Blocklist wins", "A blocked payee is refused for the agent and for the owner's approval alike.", 329],
+  ["Rolling 24-hour cap", "Sums the agent's own payments over the last 24 hours, not a calendar day, so midnight can't be gamed.", 334],
+  ["Cash buffer", "No agent payment may leave the vault below the owner's buffer.", 336],
+  ["Payment ring", "At most 32 agent payments in 24 hours; the 33rd is refused instead of overwriting the record the cap relies on.", 374],
   ["Two-step ownership", "Ownership moves by offer and accept, so a typo can't hand the vault away.", 19],
 ] as const;
 
@@ -67,7 +67,7 @@ export default function SecurityPage() {
 
       <Sec title="The agent can only be stricter">
         <div className="dp-cards">
-          <div><p className="dp-k">Rules first</p><p>Plain code decides from the vault's own checkPayment answer. It never pays what the vault says needs approval or is blocked, a property tested for every reason code.</p><Code path="agent/src/brain.ts" line={160}>decide()</Code></div>
+          <div><p className="dp-k">Rules first</p><p>Plain code decides from the vault's own checkPayment answer. It never pays what the vault says needs approval or is blocked, a property tested for every reason code.</p><Code path="agent/src/brain.ts" line={168}>decide()</Code></div>
           <div><p className="dp-k">Injection guard</p><p>Before any model reads a bill's text, plain code checks it for instructions aimed at the reviewer, after undoing lookalike letters, leetspeak, dotted letters and instructions split across fields.</p><Code path="agent/src/guard.ts">guard.ts</Code></div>
           <div><p className="dp-k">Claude review</p><p>Claude Haiku 5.5 takes a second look for lookalike payees, odd amounts and pressure. Outside text is fenced; the answer must match a fixed schema; the strictest answer wins; a failure changes nothing.</p><Code path="agent/src/review.ts">review.ts</Code></div>
         </div>

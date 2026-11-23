@@ -8,7 +8,7 @@ import { useApp } from "../state.tsx";
 export function BillForm({ onClose }: { onClose: () => void }) {
   const { act, busy } = useApp();
   const today = new Date().toISOString().slice(0, 10);
-  const [f, setF] = useState({ label: "", payee: "", amount: "", due: today, repeat: "0", invoiceText: "" });
+  const [f, setF] = useState({ label: "", payee: "", amount: "", due: today, repeat: "0", invoiceText: "", critical: false });
   const [err, setErr] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
 
@@ -44,9 +44,9 @@ export function BillForm({ onClose }: { onClose: () => void }) {
       const due = BigInt(Math.floor(new Date(`${f.due}T09:00:00Z`).getTime() / 1000));
       const interval = Number(f.repeat);
       const label = f.label.trim().slice(0, 64);
-      const ok = await act(`Listed ${label}`, { fn: "addBill", args: [f.payee as Address, amount, due, interval, label] }, (m: Model) => ({
+      const ok = await act(`Listed ${label}`, { fn: "addBill", args: [f.payee as Address, amount, due, interval, f.critical, label] }, (m: Model) => ({
         ...m,
-        bills: [...m.bills, { id: m.bills.length, payee: f.payee as Address, amount, firstDue: Number(due), intervalDays: interval, active: true, label }],
+        bills: [...m.bills, { id: m.bills.length, payee: f.payee as Address, amount, firstDue: Number(due), intervalDays: interval, active: true, critical: f.critical, label }],
         upcoming: [...m.upcoming, { billId: m.bills.length, period: 0, label, payee: f.payee as Address, due: Number(due), amount, kind: "approval", status: "New payee" }],
       }));
       if (ok) onClose();
@@ -55,7 +55,7 @@ export function BillForm({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const field = (k: keyof typeof f, label: string, props: Record<string, unknown> = {}) => (
+  const field = (k: Exclude<keyof typeof f, "critical">, label: string, props: Record<string, unknown> = {}) => (
     <label className="form-row">
       <span>{label}</span>
       <input value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} {...props} />
@@ -84,6 +84,10 @@ export function BillForm({ onClose }: { onClose: () => void }) {
           <option value="30">Every 30 days</option>
           <option value="365">Every year</option>
         </select>
+      </label>
+      <label className="check-row">
+        <input type="checkbox" checked={f.critical} onChange={(e) => setF({ ...f, critical: e.target.checked })} />
+        <span><b>Critical</b>: paid first, and never held back to protect the cash buffer (payroll, rent)</span>
       </label>
       {f.invoiceText && <p className="faint xs" style={{ marginTop: 8 }}>From the invoice: {f.invoiceText}. Check every field before you sign.</p>}
       {err && <p className="xs" style={{ color: "var(--status-critical)", marginTop: 8 }}>{err}</p>}

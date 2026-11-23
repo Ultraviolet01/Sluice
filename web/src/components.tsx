@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { CompanySwitch, CreatePanel } from "./pages/Panels.tsx";
 import type { Kind } from "./data.ts";
 import { EXPLORER, short } from "./chain.ts";
 import { useApp } from "./state.tsx";
@@ -80,6 +81,7 @@ const NAV = [
 
 export function Sidebar({ route }: { route: string }) {
   const { model, account, isOwner, connect, act } = useApp();
+  const [creating, setCreating] = useState(false);
   if (!model) return null;
   const waiting = model.approvals.filter((a) => a.status === "waiting").length;
   const s = model.session;
@@ -95,12 +97,15 @@ export function Sidebar({ route }: { route: string }) {
           <span className="chip">{model.live ? "Testnet" : "Demo"}</span>
         </div>
         <a className="addr mono" href={model.live ? `${EXPLORER}/address/${model.vault}` : undefined} target="_blank" rel="noreferrer">{short(model.vault)}</a>
+        {model.live && account && <CompanySwitch current={model.vault} />}
         {model.live && (
           account
             ? <span className="xs" style={{ color: isOwner ? "var(--status-success)" : "var(--accent-brass)" }}>{isOwner ? "Signed in as owner" : `Viewing as ${short(account)}`}</span>
             : <button className="btn btn-secondary" style={{ marginTop: 6, padding: "6px 10px", fontSize: 13 }} onClick={connect}>Connect wallet</button>
         )}
+        <button className="link-btn xs" onClick={() => setCreating(true)}>+ Create a company</button>
       </div>
+      {creating && <CreatePanel onClose={() => setCreating(false)} />}
       <nav className="nav">
         {NAV.map((n) => (
           <a key={n.to} href={`#/app/${n.to}${window.location.hash.includes("?") ? "?" + window.location.hash.split("?")[1] : ""}`} className={route === n.to ? "active" : ""}>

@@ -4,9 +4,9 @@ import "./landing.css";
 const STEPS = [
   ["Observe", "Reads the vault: balance, cash buffer, the agent's session and what it has spent in the last 24 hours, every bill, and past receipts.", "agent/src/chain.ts"],
   ["Forecast", "Projects the balance over the next 14 days, paying each bill on its due date, and finds the first day it would fall below the buffer.", "agent/src/brain.ts"],
-  ["Decide", "For each bill that is due, asks the vault's checkPayment and follows its answer: pay, propose, refuse or wait. A bill more than 25% above that payee's last three goes to you, even inside the limits.", "agent/src/brain.ts"],
+  ["Decide", "Critical bills first. For each bill that is due, asks the vault's checkPayment and follows its answer: pay, propose, refuse or wait. A bill that would break the buffer but isn't due yet is held; one more than 25% above that payee's usual goes to you.", "agent/src/brain.ts"],
   ["Review", "Before paying anything alone, an injection guard reads the bill's text, then Claude Haiku 5.5 looks for lookalike payees and odd amounts. Both can only make the decision stricter.", "agent/src/review.ts"],
-  ["Act", "Simulates the transaction, then calls pay(bill, period) or propose(bill, period, note). A refusal costs no gas and shows the vault's reason.", "agent/src/loop.ts"],
+  ["Act", "Simulates the transaction, then pays, or proposes with a plain-English note written by Claude Haiku 5.5. If something needs you, a Telegram message says so.", "agent/src/loop.ts"],
   ["Learn", "After you approve one payee three times in a row with steadily rising bills, drafts a higher cap. Only you can apply it.", "agent/src/brain.ts"],
 ] as const;
 
@@ -14,6 +14,7 @@ const DECISIONS = [
   ["Pay", "A listed bill, to an approved payee, inside the per-payment cap, the 24-hour budget and the cash buffer, and nothing odd in the review", "pay(), and the vault checks it all again"],
   ["Propose", "A new payee, over a cap or threshold, below the buffer, a spike, or something the review flagged", "You approve or reject"],
   ["Refuse", "A blocklisted payee", "The vault refuses it too, even on your approval"],
+  ["Hold", "Would break the cash buffer but isn't due yet (never a critical bill)", "Proposed on its due date if money hasn't come in"],
   ["Wait", "Not due yet, paused, or no live session", "checkPayment"],
 ] as const;
 
@@ -30,7 +31,8 @@ export default function HowItWorks() {
 
       <Sec title="Setting the line">
         <ol className="dp-steps">
-          <li><b>List your bills.</b> Payee, amount, first due date, and how often it repeats. Upload an invoice and Claude drafts the bill for you to check. Sluice can only pay bills on this list.</li>
+          <li><b>Create your company</b> in one signature. Your wallet owns the vault.</li>
+          <li><b>List your bills.</b> Payee, amount, first due date, how often it repeats, and whether it's critical. Upload an invoice and Claude drafts the bill, or import many from a CSV. Sluice can only pay bills on this list.</li>
           <li><b>Approve payees.</b> Bills to approved payees can be paid alone. Anything to a new payee comes to you first. Blocked addresses are never paid.</li>
           <li><b>Set the limits.</b> A cap per payment, a budget per rolling 24 hours, an approval threshold, and a cash buffer the agent may never spend into.</li>
           <li><b>Grant the agent a session</b> with those caps and an expiry date. Revoke it, or pause every payment, with one signature.</li>

@@ -11,7 +11,8 @@ const NET = [
 ] as const;
 
 const METHODS = [
-  ["addBill(payee, amount, firstDue, intervalDays, label)", "Owner", "Lists a bill. intervalDays = 0 for a one-off"],
+  ["addBill(payee, amount, firstDue, intervalDays, critical, label)", "Owner", "Lists a bill. intervalDays = 0 for a one-off; critical bills are paid first and never held"],
+  ["addBills(bills[])", "Owner", "Lists up to 50 bills in one signature"],
   ["cancelBill(billId) / releaseBill(billId, period)", "Owner", "Stops a bill / reopens a rejected period"],
   ["grantSession(agent, perPaymentCap, dailyCap, expiresAt)", "Owner", "Gives the agent its caps and an expiry"],
   ["revokeSession(agent)", "Owner", "Removes the agent's access at once"],
@@ -22,6 +23,7 @@ const METHODS = [
   ["pay(billId, period)", "Agent", "Settles a listed bill period inside the limits"],
   ["propose(billId, period, note)", "Agent", "Sends a bill period to the owner"],
   ["checkPayment(agent, billId, period)", "Anyone", "Runs alone, needs approval or blocked, and why"],
+  ["SluiceFactory.createVault(name, cashBuffer, approvalThreshold)", "Anyone", "Creates a vault owned by the caller"],
 ] as const;
 
 const Cmd = ({ children }: { children: string }) => <pre className="dp-pre"><code>{children}</code></pre>;
@@ -44,10 +46,9 @@ export default function Docs() {
       <Sec id="Set up a company" title="Set up a company">
         <ol className="dp-steps">
           <li><b>Add Aevum Testnet to MetaMask</b> (chain 44005) and claim tQDAY for gas and tUSD8 at faucet.qday.info.</li>
-          <li><b>Deploy a vault</b> with your wallet as owner: in <code>contracts/</code>, copy <code>.env.example</code> to <code>.env</code>, set <code>DEPLOYER_PRIVATE_KEY</code> and <code>OWNER_ADDRESS</code>, then run <code>npm run deploy</code>. It prints the vault address.</li>
+          <li><b>Create your company</b>: open the dashboard, connect your wallet and choose <b>Create a company</b>. One signature creates your vault with you as owner. (Or deploy one from <code>contracts/</code> with <code>npm run deploy</code>.)</li>
           <li><b>Fund it</b> by sending tUSD8 to the vault's address.</li>
-          <li><b>Open the dashboard</b> at <code>#/app/overview?vault=0x…</code> and connect your wallet.</li>
-          <li><b>Under Rules,</b> approve your payees and list your bills. Set the cash buffer and approval threshold.</li>
+          <li><b>Under Rules,</b> approve your payees and list your bills, one by one or with <b>Import bills</b> from a CSV. Mark payroll and rent as critical. Set the cash buffer and approval threshold.</li>
           <li><b>Under Settings,</b> grant the agent's address a session: a cap per payment, a cap per 24 hours, and how many days it lasts.</li>
         </ol>
       </Sec>
@@ -63,6 +64,7 @@ export default function Docs() {
             <tr><td>Secret</td><td><code>ANTHROPIC_API_KEY</code></td><td>Optional, turns on the Claude review</td></tr>
             <tr><td>Variable</td><td><code>SLUICE_VAULTS</code></td><td>Comma-separated vault addresses</td></tr>
             <tr><td>Variable</td><td><code>SLUICE_FROM_BLOCK</code></td><td>Optional, the vault's deployment block</td></tr>
+            <tr><td>Secret</td><td><code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code></td><td>Optional, Telegram alerts when something needs you</td></tr>
           </tbody>
         </table>
         <p className="dp-note">Scheduled workflows run from the repository's default branch. Each run's log lists what the agent paid, proposed or refused, with transaction links. More in <Code path="agent/README.md">agent/README.md</Code>.</p>
@@ -70,7 +72,7 @@ export default function Docs() {
 
       <Sec id="The dashboard" title="The dashboard">
         <Cmd>{"cd web && npm install && npm run dev"}</Cmd>
-        <p>With no vault set it shows demo data. Set <code>VITE_VAULT_ADDRESS</code> (and optionally <code>VITE_FROM_BLOCK</code>, <code>VITE_COMPANY_NAME</code>) when building, or add <code>?vault=0x…</code> to the address. Invoice reading needs <code>ANTHROPIC_API_KEY</code> on the host. More in <Code path="web/README.md">web/README.md</Code>.</p>
+        <p>With no vault set it shows demo data. Set <code>VITE_FACTORY_ADDRESS</code> to turn on <b>Create a company</b>, and <code>VITE_VAULT_ADDRESS</code> (and optionally <code>VITE_FROM_BLOCK</code>, <code>VITE_COMPANY_NAME</code>) when building, or add <code>?vault=0x…</code> to the address. Invoice reading needs <code>ANTHROPIC_API_KEY</code> on the host. More in <Code path="web/README.md">web/README.md</Code>.</p>
       </Sec>
 
       <Sec id="Contract reference" title="Contract reference">
@@ -87,8 +89,8 @@ export default function Docs() {
 
       <Sec id="Check it" title="Check it">
         <ul className="dp-list">
-          <li><b>Contract and attacks:</b> <code>cd contracts && npx hardhat test</code>, 39 tests including 20 stolen-key attacks.</li>
-          <li><b>Agent:</b> <code>cd agent && npm test</code>, 22 tests: decisions, the injection guard, the review, and whole rounds against a fake vault.</li>
+          <li><b>Contract and attacks:</b> <code>cd contracts && npx hardhat test</code>, 44 tests, including the factory and 21 stolen-key attacks.</li>
+          <li><b>Agent:</b> <code>cd agent && npm test</code>, 31 tests: decisions, holding bills, the injection guard, the review, alerts, and whole rounds against a fake vault.</li>
           <li><b>End to end on a local chain:</b> the steps in the <a href={`${REPO}#see-the-agent-work-locally`} target="_blank" rel="noreferrer">README</a>, which deploy a demo company and run a real round.</li>
         </ul>
       </Sec>

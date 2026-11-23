@@ -27,6 +27,7 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Agent payments remembered for the rolling 24h cap.
     uint256 public constant SLOTS = 32;
     uint256 public constant MAX_LABEL = 64;
+    uint256 public constant MAX_BATCH = 50;
     uint256 public constant MAX_NOTE = 280;
 
     // ---------------------------------------------------------------- types
@@ -49,6 +50,17 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
         uint64 firstDue; // unix seconds
         uint32 intervalDays; // 0 = one-off; otherwise repeats every N days
         bool active;
+        bool critical; // the agent pays it first and never holds it back for the buffer
+        string label;
+    }
+
+    /// @notice One bill in an `addBills` batch.
+    struct BillInput {
+        address payee;
+        uint128 amount;
+        uint64 firstDue;
+        uint32 intervalDays;
+        bool critical;
         string label;
     }
 
@@ -119,7 +131,7 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     event PayeeAllowed(address indexed payee, bool allowed);
     event PayeeBlocked(address indexed payee, bool blocked);
     event PolicyChanged(bytes32 indexed field, uint256 oldValue, uint256 newValue);
-    event BillAdded(uint256 indexed billId, address indexed payee, uint256 amount, uint64 firstDue, uint32 intervalDays, string label);
+    event BillAdded(uint256 indexed billId, address indexed payee, uint256 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label);
     event BillCancelled(uint256 indexed billId);
     event BillReleased(uint256 indexed billId, uint32 indexed period);
     /// @notice Receipt for every settled bill period.
@@ -194,17 +206,34 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     }
 
     /// @notice Lists a bill the agent may settle. intervalDays = 0 for a one-off bill.
-    function addBill(address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, string calldata label)
+    function addBill(address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool critical, string calldata label)
         external
         onlyOwner
+        returns (uint256 billId)
+    {
+        return _addBill(payee, amount, firstDue, intervalDays, critical, label);
+    }
+
+    /// @notice Lists up to MAX_BATCH bills in one signature (a bulk import).
+    function addBills(BillInput[] calldata bills) external onlyOwner returns (uint256 firstId) {
+        if (bills.length == 0 || bills.length > MAX_BATCH) revert InvalidBill();
+        firstId = _bills.length;
+        for (uint256 i; i < bills.length; ++i) {
+            BillInput calldata b = bills[i];
+            _addBill(b.payee, b.amount, b.firstDue, b.intervalDays, b.critical, b.label);
+        }
+    }
+
+    function _addBill(address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool critical, string calldata label)
+        internal
         returns (uint256 billId)
     {
         if (payee == address(0)) revert ZeroAddress();
         if (amount == 0 || firstDue == 0) revert InvalidBill();
         if (bytes(label).length > MAX_LABEL) revert TooLong();
         billId = _bills.length;
-        _bills.push(Bill(payee, amount, firstDue, intervalDays, true, label));
-        emit BillAdded(billId, payee, amount, firstDue, intervalDays, label);
+        _bills.push(Bill(payee, amount, firstDue, intervalDays, true, critical, label));
+        emit BillAdded(billId, payee, amount, firstDue, intervalDays, critical, label);
     }
 
     function cancelBill(uint256 billId) external onlyOwner {

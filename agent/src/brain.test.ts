@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Band, DAY, Reason, candidatePeriods, decide, draftCap, firstShortfall, forecast, isSpike, money, upcoming, type Bill } from "./brain.ts";
+import { Band, DAY, Reason, candidatePeriods, decide, draftCap, firstShortfall, forecast, isSpike, money, upcoming, workOrder, type Bill } from "./brain.ts";
 
 const P = "0x00000000000000000000000000000000000000a1" as const;
 const u = (n: number) => BigInt(Math.round(n * 1e6));
@@ -70,4 +70,19 @@ test("cap draft: three rising approvals over the cap, never otherwise", () => {
 test("money formats 6-decimal tUSD8", () => {
   assert.equal(money(u(1234.5)), "1,234.50 tUSD8");
   assert.equal(money(-u(80)), "-80.00 tUSD8");
+});
+
+test("below the buffer: hold a bill that is not due yet, propose a critical or due one", () => {
+  assert.equal(decide(Band.NeedsApproval, Reason.BelowCashBuffer, { due: NOW + DAY, now: NOW }).kind, "defer");
+  assert.equal(decide(Band.NeedsApproval, Reason.BelowCashBuffer, { due: NOW, now: NOW }).kind, "propose");
+  assert.match(decide(Band.NeedsApproval, Reason.BelowCashBuffer, { due: NOW + DAY, now: NOW, critical: true }).reason, /critical/);
+  // other reasons are never held back
+  assert.equal(decide(Band.NeedsApproval, Reason.OverPerPaymentCap, { due: NOW + DAY, now: NOW }).kind, "propose");
+});
+
+test("work order: critical bills first, then the oldest due", () => {
+  const a = { bill: bill({ id: 1 }), due: NOW - 10 };
+  const b = { bill: bill({ id: 2, critical: true }), due: NOW + 10 };
+  const c = { bill: bill({ id: 3 }), due: NOW - 20 };
+  assert.deepEqual(workOrder([a, b, c]).map((x) => x.bill.id), [2, 3, 1]);
 });

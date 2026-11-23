@@ -16,11 +16,11 @@ async function main() {
   await vault.setPayeeAllowed(northwind.address, true);
   await vault.setPayeeAllowed(atlas.address, true);
   await vault.setPayeeBlocked(scammer.address, true);
-  await vault.addBill(northwind.address, usd(80), now, 30, "Northwind Hosting");
-  await vault.addBill(atlas.address, usd(800), now, 0, "Atlas Freight, Q4 shipping");
-  await vault.addBill(newVendor.address, usd(45), now, 0, "Figma subscription");
-  await vault.addBill(scammer.address, usd(950), now, 0, "Northwind Hosting - new bank details");
-  await vault.addBill(atlas.address, usd(120), now + 10 * 86400, 0, "Atlas Freight, December");
+  await vault.addBill(northwind.address, usd(80), now, 30, false, "Northwind Hosting");
+  await vault.addBill(atlas.address, usd(800), now, 0, false, "Atlas Freight, Q4 shipping");
+  await vault.addBill(newVendor.address, usd(45), now, 0, false, "Figma subscription");
+  await vault.addBill(scammer.address, usd(950), now, 0, false, "Northwind Hosting - new bank details");
+  await vault.addBill(atlas.address, usd(120), now + 10 * 86400, 0, false, "Atlas Freight, December");
   console.log(JSON.stringify({ vault: v, token: await token.getAddress(), agent: agent.address }));
 }
 main().catch((e) => { console.error(e); process.exitCode = 1; });

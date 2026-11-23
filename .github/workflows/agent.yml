@@ -4,9 +4,12 @@
 #
 # Settings > Secrets and variables > Actions:
 #   Secrets:   AGENT_PRIVATE_KEY  (required) the agent's session key, 0x...
-#              ANTHROPIC_API_KEY  (optional) turns on the Claude review
+#              ANTHROPIC_API_KEY  (optional) Claude review and plain-English reasons
+#              TELEGRAM_BOT_TOKEN (optional) with TELEGRAM_CHAT_ID: alerts when something needs you
+#              TELEGRAM_CHAT_ID
 #   Variables: SLUICE_VAULTS      (required) comma-separated vault addresses
 #              SLUICE_FROM_BLOCK  (optional) the vault's deployment block
+#              SLUICE_APP_URL     (optional) the dashboard's address, linked from alerts
 name: agent
 
 on:
@@ -42,12 +45,21 @@ jobs:
           cache: npm
           cache-dependency-path: agent/package-lock.json
       - run: npm ci
+      # Remembers which alerts were already sent, so Telegram hears each one once.
+      - uses: actions/cache/restore@v4
+        with:
+          path: agent/.sluice-alerts.json
+          key: sluice-alerts-${{ github.run_id }}
+          restore-keys: sluice-alerts-
       - name: Round
         env:
           AGENT_PRIVATE_KEY: ${{ secrets.AGENT_PRIVATE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLUICE_VAULTS: ${{ vars.SLUICE_VAULTS }}
           SLUICE_FROM_BLOCK: ${{ vars.SLUICE_FROM_BLOCK }}
+          SLUICE_APP_URL: ${{ vars.SLUICE_APP_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           AEVUM_RPC_URL: https://rpc-test.qday.info
         run: |
           if [ -z "$SLUICE_VAULTS" ] || [ -z "$AGENT_PRIVATE_KEY" ]; then
@@ -55,3 +67,8 @@ jobs:
             exit 0
           fi
           if [ "${{ inputs.dry_run }}" = "true" ]; then npx tsx src/main.ts --dry-run; else npx tsx src/main.ts; fi
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: agent/.sluice-alerts.json
+          key: sluice-alerts-${{ github.run_id }}

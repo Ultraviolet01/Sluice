@@ -47,7 +47,7 @@ function Dashboard({ page }: { page: string }) {
     <div className="app">
       <Sidebar route={page} />
       <main className="main">
-        {!model.live && <div className="demo-banner">Demo data. Open <code>#/app/overview?vault=0x…</code> or set <code>VITE_VAULT_ADDRESS</code> to see a live vault on Aevum Testnet.</div>}
+        {!model.live && <div className="demo-banner">Demo data. Use <b>Create a company</b> in the sidebar for your own vault, or open <code>#/app/overview?vault=0x…</code> to see a live one on Aevum Testnet.</div>}
         {error && <div className="demo-banner warn">Last refresh failed: {error}</div>}
         {page === "overview" && <Overview />}
         {page === "approvals" && <Approvals />}

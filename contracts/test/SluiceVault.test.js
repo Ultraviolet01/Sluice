@@ -22,13 +22,13 @@ async function deploy() {
   await vault.grantSession(agent.address, usd(500), usd(600), expiry);
   await vault.setPayeeAllowed(payee.address, true);
   // bill 0: one-off 80 to allowlisted payee, due now
-  await vault.addBill(payee.address, usd(80), now, 0, "Northwind Hosting");
+  await vault.addBill(payee.address, usd(80), now, 0, false, "Northwind Hosting");
   // bill 1: monthly-ish (30 days) 200 to allowlisted payee, due now
-  await vault.addBill(payee.address, usd(200), now, 30, "Payroll");
+  await vault.addBill(payee.address, usd(200), now, 30, false, "Payroll");
   // bill 2: 800 to allowlisted payee (over caps), due now
-  await vault.addBill(payee.address, usd(800), now, 0, "Fund payroll");
+  await vault.addBill(payee.address, usd(800), now, 0, false, "Fund payroll");
   // bill 3: 50 to a payee nobody allowlisted
-  await vault.addBill(newPayee.address, usd(50), now, 0, "New supplier");
+  await vault.addBill(newPayee.address, usd(50), now, 0, false, "New supplier");
   return { vault, token, owner, agent, payee, newPayee, stranger, now, expiry };
 }
 
@@ -73,11 +73,26 @@ describe("SluiceVault", () => {
       await expect(vault.connect(agent).pay(0, 0)).to.be.revertedWithCustomError(vault, "NotAgentPayable").withArgs(R.BillCancelled);
     });
 
+    it("lists many bills in one signature, with the critical flag kept", async () => {
+      const { vault, payee } = await loadFixture(deploy);
+      const now = await time.latest();
+      const rows = [
+        { payee: payee.address, amount: usd(10), firstDue: now, intervalDays: 0, critical: false, label: "a" },
+        { payee: payee.address, amount: usd(20), firstDue: now, intervalDays: 30, critical: true, label: "payroll" },
+      ];
+      await expect(vault.addBills(rows)).to.emit(vault, "BillAdded").withArgs(5, payee.address, usd(20), now, 30, true, "payroll");
+      expect(await vault.billCount()).to.equal(6);
+      expect((await vault.getBill(5)).critical).to.equal(true);
+      await expect(vault.addBills([])).to.be.revertedWithCustomError(vault, "InvalidBill");
+      await expect(vault.addBills(Array(51).fill(rows[0]))).to.be.revertedWithCustomError(vault, "InvalidBill");
+      await expect(vault.addBills([{ ...rows[0], payee: ethers.ZeroAddress }])).to.be.revertedWithCustomError(vault, "ZeroAddress");
+    });
+
     it("validates bills", async () => {
       const { vault, payee } = await loadFixture(deploy);
-      await expect(vault.addBill(ethers.ZeroAddress, 1, 1, 0, "x")).to.be.revertedWithCustomError(vault, "ZeroAddress");
-      await expect(vault.addBill(payee.address, 0, 1, 0, "x")).to.be.revertedWithCustomError(vault, "InvalidBill");
-      await expect(vault.addBill(payee.address, 1, 1, 0, "x".repeat(65))).to.be.revertedWithCustomError(vault, "TooLong");
+      await expect(vault.addBill(ethers.ZeroAddress, 1, 1, 0, false, "x")).to.be.revertedWithCustomError(vault, "ZeroAddress");
+      await expect(vault.addBill(payee.address, 0, 1, 0, false, "x")).to.be.revertedWithCustomError(vault, "InvalidBill");
+      await expect(vault.addBill(payee.address, 1, 1, 0, false, "x".repeat(65))).to.be.revertedWithCustomError(vault, "TooLong");
     });
   });
 
@@ -98,8 +113,8 @@ describe("SluiceVault", () => {
     it("the 24h cap is rolling, not a fixed window", async () => {
       const { vault, payee, agent } = await loadFixture(deploy);
       const now = await time.latest();
-      await vault.addBill(payee.address, usd(300), now, 0, "a"); // 4
-      await vault.addBill(payee.address, usd(300), now, 0, "b"); // 5
+      await vault.addBill(payee.address, usd(300), now, 0, false, "a"); // 4
+      await vault.addBill(payee.address, usd(300), now, 0, false, "b"); // 5
       await vault.connect(agent).pay(4, 0); // t0: 300
       await time.increase(12 * 3600);
       await vault.connect(agent).pay(0, 0); // t0+12h: 80 -> 380

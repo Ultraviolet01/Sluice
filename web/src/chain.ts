@@ -1,7 +1,7 @@
 // Aevum Testnet access for the dashboard: public reads for everyone, and the
 // owner's actions signed in their own browser wallet (MetaMask or any EIP-1193 wallet).
 
-import { createPublicClient, createWalletClient, custom, defineChain, http, parseAbi, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, custom, defineChain, http, parseAbi, parseEventLogs, type Address, type Hex } from "viem";
 
 export const aevum = defineChain({
   id: 44005,
@@ -24,7 +24,7 @@ export const VAULT_ABI = parseAbi([
   "function sessions(address) view returns (uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt, bool active)",
   "function spentInWindow(address) view returns (uint256)",
   "function billCount() view returns (uint256)",
-  "function getBill(uint256) view returns ((address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool active, string label))",
+  "function getBill(uint256) view returns ((address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool active, bool critical, string label))",
   "function settlements(uint256, uint32) view returns (uint8 status, address agent, uint64 createdAt, uint8 reason, string note)",
   "function isAllowedPayee(address) view returns (bool)",
   "function isBlockedPayee(address) view returns (bool)",
@@ -33,7 +33,8 @@ export const VAULT_ABI = parseAbi([
   "function reject(uint256 billId, uint32 period)",
   "function pause()",
   "function unpause()",
-  "function addBill(address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, string label) returns (uint256)",
+  "function addBill(address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label) returns (uint256)",
+  "function addBills((address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label)[] bills) returns (uint256)",
   "function cancelBill(uint256 billId)",
   "function setPayeeAllowed(address payee, bool allowed)",
   "function setPayeeBlocked(address payee, bool blocked)",
@@ -46,7 +47,7 @@ export const VAULT_ABI = parseAbi([
   "event BillPaid(uint256 indexed billId, uint32 indexed period, address indexed payee, uint256 amount, address agent, bool ownerApproved)",
   "event PaymentProposed(uint256 indexed billId, uint32 indexed period, address indexed agent, uint256 amount, uint8 reason, string note)",
   "event PaymentRejected(uint256 indexed billId, uint32 indexed period)",
-  "event BillAdded(uint256 indexed billId, address indexed payee, uint256 amount, uint64 firstDue, uint32 intervalDays, string label)",
+  "event BillAdded(uint256 indexed billId, address indexed payee, uint256 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label)",
   "event BillCancelled(uint256 indexed billId)",
   "event PayeeAllowed(address indexed payee, bool allowed)",
   "event PayeeBlocked(address indexed payee, bool blocked)",
@@ -57,6 +58,55 @@ export const VAULT_ABI = parseAbi([
   "event Paused(address account)",
   "event Unpaused(address account)",
 ]);
+
+export interface BillInput {
+  payee: Address;
+  amount: bigint;
+  firstDue: bigint;
+  intervalDays: number;
+  critical: boolean;
+  label: string;
+}
+
+export const FACTORY = (import.meta.env.VITE_FACTORY_ADDRESS || "") as Address | "";
+
+export const FACTORY_ABI = parseAbi([
+  "function createVault(string name, uint256 cashBuffer, uint256 approvalThreshold) returns (address)",
+  "function vaultsCreatedBy(address) view returns (address[])",
+  "function nameOf(address) view returns (string)",
+  "event VaultCreated(address indexed creator, address indexed vault, string name)",
+]);
+
+/** Creates the caller's company vault through the factory; resolves to the new vault's address. */
+export async function createCompany(account: Address, name: string, cashBuffer: bigint, threshold: bigint): Promise<Address> {
+  const provider = eth();
+  if (!provider || !FACTORY) throw new Error("Company creation is not set up on this site.");
+  const wallet = createWalletClient({ chain: aevum, account, transport: custom(provider) });
+  const { request } = await publicClient.simulateContract({ address: FACTORY, abi: FACTORY_ABI, functionName: "createVault", args: [name, cashBuffer, threshold], account });
+  const hash = await wallet.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") throw new Error("Transaction reverted");
+  const logs = parseEventLogs({ abi: FACTORY_ABI, logs: receipt.logs, eventName: "VaultCreated" });
+  if (!logs[0]) throw new Error("Vault created, but its address was not in the receipt");
+  return logs[0].args.vault;
+}
+
+/** The companies an account created, with their names. */
+export async function myCompanies(account: Address): Promise<{ vault: Address; name: string }[]> {
+  if (!FACTORY) return [];
+  const vaults = (await publicClient.readContract({ address: FACTORY, abi: FACTORY_ABI, functionName: "vaultsCreatedBy", args: [account] })) as Address[];
+  return Promise.all(vaults.map(async (v) => ({ vault: v, name: (await publicClient.readContract({ address: FACTORY, abi: FACTORY_ABI, functionName: "nameOf", args: [v] })) as string })));
+}
+
+export async function companyName(vault: Address): Promise<string | null> {
+  if (!FACTORY) return null;
+  try {
+    const n = (await publicClient.readContract({ address: FACTORY, abi: FACTORY_ABI, functionName: "nameOf", args: [vault] })) as string;
+    return n || null;
+  } catch {
+    return null;
+  }
+}
 
 export const ERC20_ABI = parseAbi(["function balanceOf(address) view returns (uint256)"]);
 
@@ -93,7 +143,8 @@ export async function connectWallet(): Promise<Address> {
 export type OwnerCall =
   | { fn: "approve" | "reject"; args: [bigint, number] }
   | { fn: "pause" | "unpause"; args: [] }
-  | { fn: "addBill"; args: [Address, bigint, bigint, number, string] }
+  | { fn: "addBill"; args: [Address, bigint, bigint, number, boolean, string] }
+  | { fn: "addBills"; args: [BillInput[]] }
   | { fn: "cancelBill"; args: [bigint] }
   | { fn: "setPayeeAllowed" | "setPayeeBlocked"; args: [Address, boolean] }
   | { fn: "setCashBuffer" | "setApprovalThreshold"; args: [bigint] }

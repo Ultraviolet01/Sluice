@@ -62,6 +62,8 @@ export interface Bill {
   firstDue: number; // unix seconds
   intervalDays: number; // 0 = one-off
   active: boolean;
+  /** Paid first, and never held back for the cash buffer. */
+  critical?: boolean;
   label: string;
 }
 
@@ -151,22 +153,41 @@ export type Action =
   | { kind: "propose"; reason: string }
   | { kind: "refuse"; reason: string }
   | { kind: "wait"; reason: string }
+  | { kind: "defer"; reason: string }
   | { kind: "skip"; reason: string };
 
 /**
  * What to do with one bill period, from the vault's own checkPayment answer
  * plus Sluice's extra caution (spikes). Never more permissive than the vault.
+ *
+ * A bill that would take the vault below its cash buffer and is not due yet is
+ * held (deferred) instead of sent to the owner at once: money may come in
+ * before it is due, and it is proposed on its due date if not. A critical bill
+ * is never held: it goes to the owner straight away.
  */
-export function decide(band: Band, reason: Reason, opts: { spike?: boolean } = {}): Action {
+export function decide(band: Band, reason: Reason, opts: { spike?: boolean; critical?: boolean; due?: number; now?: number } = {}): Action {
   const why = REASON_TEXT[reason];
   if (band === Band.Blocked) {
     if (reason === Reason.AlreadySettled || reason === Reason.AlreadyProposed) return { kind: "skip", reason: why };
     if (reason === Reason.Blocklisted) return { kind: "refuse", reason: `refused: ${why}` };
     return { kind: "wait", reason: why };
   }
-  if (band === Band.NeedsApproval) return { kind: "propose", reason: `needs you: ${why}` };
+  if (band === Band.NeedsApproval) {
+    if (reason === Reason.BelowCashBuffer) {
+      if (opts.critical) return { kind: "propose", reason: "needs you: critical bill, but paying it would take the vault below its cash buffer" };
+      if (opts.due !== undefined && opts.now !== undefined && opts.due > opts.now) {
+        return { kind: "defer", reason: "held until it is due: paying now would take the vault below its cash buffer" };
+      }
+    }
+    return { kind: "propose", reason: `needs you: ${why}` };
+  }
   if (opts.spike) return { kind: "propose", reason: "needs you: more than 25% above this payee's last 3 payments" };
   return { kind: "pay", reason: why };
+}
+
+/** The order to work through due bills: critical first, then oldest due first. */
+export function workOrder<T extends { bill: Bill; due: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => Number(Boolean(b.bill.critical)) - Number(Boolean(a.bill.critical)) || a.due - b.due);
 }
 
 // ---------------------------------------------------------------- learning

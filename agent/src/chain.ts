@@ -24,7 +24,7 @@ export const VAULT_ABI = parseAbi([
   "function sessions(address) view returns (uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt, bool active)",
   "function spentInWindow(address) view returns (uint256)",
   "function billCount() view returns (uint256)",
-  "function getBill(uint256) view returns ((address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool active, string label))",
+  "function getBill(uint256) view returns ((address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool active, bool critical, string label))",
   "function settlements(uint256, uint32) view returns (uint8 status, address agent, uint64 createdAt, uint8 reason, string note)",
   "function checkPayment(address, uint256, uint32) view returns (uint8, uint8)",
   "function isAllowedPayee(address) view returns (bool)",
@@ -109,8 +109,8 @@ export function viemChain(opts: { rpcUrl: string; privateKey: Hex; fromBlock?: b
       ]);
       const bills: Bill[] = [];
       for (let i = 0; i < Number(count); i++) {
-        const b = await read<{ payee: Address; amount: bigint; firstDue: bigint; intervalDays: number; active: boolean; label: string }>(vault, "getBill", [BigInt(i)]);
-        bills.push({ id: i, payee: b.payee, amount: b.amount, firstDue: Number(b.firstDue), intervalDays: Number(b.intervalDays), active: b.active, label: b.label });
+        const b = await read<{ payee: Address; amount: bigint; firstDue: bigint; intervalDays: number; active: boolean; critical: boolean; label: string }>(vault, "getBill", [BigInt(i)]);
+        bills.push({ id: i, payee: b.payee, amount: b.amount, firstDue: Number(b.firstDue), intervalDays: Number(b.intervalDays), active: b.active, critical: b.critical, label: b.label });
       }
       const logs = await pub.getLogs({ address: vault, event: BILL_PAID, fromBlock: opts.fromBlock ?? 0n, toBlock: "latest" });
       const paid: Paid[] = logs.map((l) => ({

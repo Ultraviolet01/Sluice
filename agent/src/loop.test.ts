@@ -37,6 +37,7 @@ function fakeChain(bills: Bill[], extra: Partial<VaultView> = {}) {
       if (b.payee === BAD) return { band: Band.Blocked, reason: Reason.Blocklisted };
       if (b.payee === NEW) return { band: Band.NeedsApproval, reason: Reason.NotAllowlisted };
       if (b.amount > view.session.perPaymentCap) return { band: Band.NeedsApproval, reason: Reason.OverPerPaymentCap };
+      if (view.balance - b.amount < view.cashBuffer) return { band: Band.NeedsApproval, reason: Reason.BelowCashBuffer };
       return { band: Band.RunsAlone, reason: Reason.Ok };
     },
     async pay(_v, id, p) {
@@ -76,7 +77,7 @@ test("the review can turn a payment into a proposal, never the reverse", async (
   assert.deepEqual(calls.map((c) => c.split(":")[0]), ["pay 0/0", "propose 1/0"]);
   const second = fakeChain([bill(0, OK, 80, "Northwlnd")]);
   await runVault(second.chain, VAULT, { dryRun: false, reviewer: reviewer({ verdict: "propose", reason: "lookalike of Northwind", by: "claude" }) });
-  assert.match(second.calls[0], /^propose 0\/0: needs you: Claude review: lookalike/);
+  assert.match(second.calls[0], /^propose 0\/0: Sluice held this for you: Claude review: lookalike/);
 });
 
 test("dry run signs nothing", async () => {
@@ -90,7 +91,7 @@ test("a spike goes to the owner even inside the limits", async () => {
   const history: Paid[] = [100, 100, 100].map((a, i) => ({ billId: 9, period: i, payee: OK, amount: u(a), ownerApproved: false }));
   const { chain, calls } = fakeChain([bill(0, OK, 200, "Atlas Freight")], { paid: history });
   await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null) });
-  assert.match(calls[0], /^propose 0\/0: needs you: more than 25%/);
+  assert.match(calls[0], /^propose 0\/0: Sluice held this for you: more than 25%/);
 });
 
 test("no live session: the round stops before deciding anything", async () => {
@@ -105,4 +106,25 @@ test("drafts a higher cap after three rising owner approvals", async () => {
   const { chain } = fakeChain([], { paid: approved, session: { perPaymentCap: u(100), dailyCap: u(600), expiresAt: NOW + DAY, active: true } });
   const events = await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null) });
   assert.ok(events.some((e) => e.step === "learn" && e.text.includes("130.00 tUSD8")));
+});
+
+test("below the buffer: holds a bill not yet due, proposes a critical one at once, critical first", async () => {
+  const later = { ...bill(0, OK, 450, "Office rent"), firstDue: NOW + 2 * DAY };
+  const payroll = { ...bill(1, OK, 450, "Payroll"), firstDue: NOW + 2 * DAY, critical: true };
+  const { chain, calls } = fakeChain([later, payroll], { balance: u(500) });
+  const alerts: { key: string; text: string }[] = [];
+  const events = await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null), alert: (a) => alerts.push(a) });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0], /^propose 1\/0: Sluice held this for you: critical bill/);
+  assert.ok(events.some((e) => e.text.includes("Office rent") && e.text.includes("defer")));
+  assert.ok(alerts.some((a) => a.key.startsWith("proposed:") && a.text.includes("Payroll")));
+  assert.ok(alerts.some((a) => a.key.startsWith("short:")));
+});
+
+test("alerts: refused bills and a custom explainer note", async () => {
+  const { chain, calls } = fakeChain([bill(0, BAD, 950, "New bank details"), bill(1, NEW, 50, "Figma")]);
+  const alerts: { key: string; text: string }[] = [];
+  await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null), explain: async () => "Custom note from the explainer.", alert: (a) => alerts.push(a) });
+  assert.match(calls[0], /Custom note from the explainer/);
+  assert.ok(alerts.some((a) => a.key === "refused:" + VAULT + ":0:0"));
 });
