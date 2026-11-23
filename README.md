@@ -101,7 +101,11 @@ Demo data by default; add `?vault=0x…` to the address (`#/app/overview?vault=0
 | Explorer | https://explorer-test.qday.info/ |
 | tUSD8 | `0x456569838f1d43009A91ebA4263147Afd7233483` (6 decimals: `1 tUSD8 = 1_000_000`) |
 | Faucet | https://faucet.qday.info/en |
-| Vault and factory | Deployment pending |
+| Factory | [`0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9`](https://explorer-test.qday.info/address/0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9) |
+| Vault | [`0x15deBE3Bed0A0Bf705B6800d279f038097dc1706`](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706) |
+| Demo company (Kora Supply Group) | [`0x4cd19a15A37Dc241938b9B0Bee67E007556554ce`](https://explorer-test.qday.info/address/0x4cd19a15A37Dc241938b9B0Bee67E007556554ce) |
+| Agent | `0x2ea4bf1d859918adf150F032F7E0C233f5498d3A` |
+| Deployed at block | `3911562` |
 
 Deploy (needs tQDAY for gas):
 

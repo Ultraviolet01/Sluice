@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { isAddress, type Address } from "viem";
-import { connectWallet, errorText, hasWallet, ownerSend, silentAccount, type OwnerCall } from "./chain.ts";
+import { connectWallet, errorText, publicClient, hasWallet, ownerSend, silentAccount, type OwnerCall } from "./chain.ts";
 import { demoModel } from "./data.ts";
 import { loadLive, type Model } from "./model.ts";
+import { DEPLOY_BLOCK } from "./logs.ts";
 
 /** The vault to show: ?vault=0x... in the address, else VITE_VAULT_ADDRESS, else the demo. */
 export function configuredVault(): Address | null {
@@ -74,7 +75,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     if (!vault) return;
     try {
-      const from = import.meta.env.VITE_FROM_BLOCK ? BigInt(import.meta.env.VITE_FROM_BLOCK) : 0n;
+      const from = import.meta.env.VITE_FROM_BLOCK ? BigInt(import.meta.env.VITE_FROM_BLOCK) : publicClient.chain?.id === 44005 ? DEPLOY_BLOCK : 0n;
       setModel(await loadLive(vault, from));
       setError(null);
     } catch (e) {

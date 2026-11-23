@@ -1,0 +1,11 @@
+{
+  "network": "aevumTestnet",
+  "vault": "0x15deBE3Bed0A0Bf705B6800d279f038097dc1706",
+  "vaultTx": "0x779e00f0d24c2787119610318bfe05fc36861f3644e63beeaf5a60ac5d9d561a",
+  "factory": "0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9",
+  "factoryTx": "0x566599fd5d42172a5044312ebe8f08cddf4c468138b2182c981cb8cdea967def",
+  "owner": "0xdE68a9391600B77E1337aeDd7ECFB86494eC7698",
+  "token": "0x456569838f1d43009A91ebA4263147Afd7233483",
+  "fromBlock": 3911562,
+  "at": "2026-11-23T10:43:27.777Z"
+}

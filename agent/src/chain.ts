@@ -3,6 +3,7 @@
 
 import { createPublicClient, createWalletClient, defineChain, http, parseAbi, parseAbiItem, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { DEPLOY_BLOCK, logsFrom } from "./logs.ts";
 import { Band, Reason, type Bill } from "./brain.ts";
 
 export const aevumTestnet = defineChain({
@@ -140,7 +141,8 @@ export function viemChain(opts: { rpcUrl: string; privateKey: Hex; fromBlock?: b
         const b = await read<{ payee: Address; amount: bigint; firstDue: bigint; intervalDays: number; active: boolean; critical: boolean; label: string }>(vault, "getBill", [BigInt(i)]);
         bills.push({ id: i, payee: b.payee, amount: b.amount, firstDue: Number(b.firstDue), intervalDays: Number(b.intervalDays), active: b.active, critical: b.critical, label: b.label });
       }
-      const logs = await pub.getLogs({ address: vault, event: BILL_PAID, fromBlock: opts.fromBlock ?? 0n, toBlock: "latest" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const logs = await logsFrom<any>(pub as any, { address: vault, event: BILL_PAID }, opts.fromBlock ?? (opts.chain && opts.chain.id !== 44005 ? 0n : DEPLOY_BLOCK));
       const paid: Paid[] = logs.map((l) => ({
         billId: Number(l.args.billId),
         period: Number(l.args.period),

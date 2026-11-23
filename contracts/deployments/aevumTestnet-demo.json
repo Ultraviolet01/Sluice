@@ -1,0 +1,46 @@
+{
+  "network": "aevumTestnet",
+  "vault": "0x4cd19a15A37Dc241938b9B0Bee67E007556554ce",
+  "factory": "0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9",
+  "token": "0x456569838f1d43009A91ebA4263147Afd7233483",
+  "owner": "0xdE68a9391600B77E1337aeDd7ECFB86494eC7698",
+  "agent": "0x2ea4bf1d859918adf150F032F7E0C233f5498d3A",
+  "payees": {
+    "Northwind Hosting": "0xe25A47FA0D4eB7C3e7909b3Bc691e29FA105Ca2B",
+    "Atlas Freight": "0x71497CCAaDda4bfc664d637BC0A54Ef7593780fD",
+    "Figma": "0xA37044b31875C19859105faC768242d3d47b983f",
+    "Contractor payroll": "0xD6c2fA0aB936BD2B7dB94e8979d5c305d6e9025b",
+    "Scammer (new bank details)": "0xF45dC881BE1F2a362F0F104e07eA2b6A3Aa90182"
+  },
+  "txs": [
+    {
+      "what": "send the agent 0.2 tQDAY for gas",
+      "tx": "0x2cb82bc1f97c60f77bf267e007683ff9ffaee826af7a55587d270a4d473308c1"
+    },
+    {
+      "what": "grant the agent a 30-day session: 3 per payment, 6 per 24 h",
+      "tx": "0x6f0fe15a6439ee0178a1a85366645022c5bea82edc26b85f5df8f43f3a8372e6"
+    },
+    {
+      "what": "approve Northwind Hosting",
+      "tx": "0xcb3d6c599c6335558b4599c19e7e94d4fec6bb53686bee4195c9af0afffafbfe"
+    },
+    {
+      "what": "approve Atlas Freight",
+      "tx": "0xc3a7f4bdaf2e7ce827c6a03ec2cbadbfd3172e153647e58159acdac9739506ff"
+    },
+    {
+      "what": "approve Contractor payroll",
+      "tx": "0x59a6275edad564d38b04a069e29ed146a4025a5be79dc56782d1b21c8de1fe0d"
+    },
+    {
+      "what": "block the scammer",
+      "tx": "0x6db2a10bab1cea720363e1f0d605a84d66041fee9926f6823374fdaf9e2cd42f"
+    },
+    {
+      "what": "list the five demo bills",
+      "tx": "0xc057690b0f7e84710ee10eb6e6b19f09f8be5bd4ba40ac4307a5fef5dfc1b33f"
+    }
+  ],
+  "at": "2026-11-23T10:45:33.843Z"
+}

@@ -100,7 +100,8 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   }
 
   // Every event the vault ever emitted, oldest first, with block times.
-  const logs = (await publicClient.getLogs({ address: vault, fromBlock, toBlock: "latest" })) as Log[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const logs = await logsFrom<Log>(publicClient as any, { address: vault }, fromBlock);
   const times = new Map<bigint, number>();
   for (const n of [...new Set(logs.map((l) => l.blockNumber!))].slice(-80)) {
     times.set(n, Number((await publicClient.getBlock({ blockNumber: n })).timestamp));
@@ -249,6 +250,7 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
 }
 
 export { fmt, toUnits } from "./units.ts";
+import { logsFrom } from "./logs.ts";
 import { fmt } from "./units.ts";
 
 export const when = (t: number) =>

@@ -1,0 +1,184 @@
+{
+  "network": "aevumTestnet",
+  "vault": "0x4cd19a15A37Dc241938b9B0Bee67E007556554ce",
+  "agent": "0x2ea4bf1d859918adf150F032F7E0C233f5498d3A",
+  "at": "2026-11-23T10:48:36.639Z",
+  "rows": [
+    {
+      "who": "agent",
+      "what": "grant itself a bigger session",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "allowlist an address it controls",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "unblock the scammer",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "list a bill to itself",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "bulk-list bills to itself",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "lower the cash buffer",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "raise the approval threshold",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "withdraw the vault",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "take ownership",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "cancel a bill",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "pay a bill nobody listed",
+      "result": "NotAgentPayable(NoSuchBill)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "pay a future period of a monthly bill",
+      "result": "NotAgentPayable(NotDueYet)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "pay a bill not yet due (payroll, in 10 days)",
+      "result": "NotAgentPayable(NotDueYet)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "pay the blocklisted scammer",
+      "result": "NotAgentPayable(Blocklisted)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "propose the blocklisted scammer to the owner",
+      "result": "Refused(Blocklisted)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "pull tokens with transferFrom",
+      "result": "Error(ERC20: transfer amount exceeds allowance)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "pay Northwind Hosting a second time",
+      "result": "NotAgentPayable(AlreadySettled)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "approve its own proposal",
+      "result": "OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)",
+      "ok": true
+    },
+    {
+      "who": "agent",
+      "what": "propose Atlas Freight again",
+      "result": "Refused(AlreadyProposed)",
+      "ok": true
+    },
+    {
+      "who": "owner",
+      "what": "pause every payment",
+      "result": "done",
+      "tx": "0x79584dc55f57389516ee48bad61815e43da40fcc3c2ed6ce799941a98c17df33",
+      "ok": true,
+      "control": true
+    },
+    {
+      "who": "agent",
+      "what": "propose while paused",
+      "result": "Refused(Paused)",
+      "ok": true
+    },
+    {
+      "who": "owner",
+      "what": "resume",
+      "result": "done",
+      "tx": "0xf6a99e013854b20fdab85db88f34ec67e86f62a5a7d6b00d80e9d07ec6bea247",
+      "ok": true,
+      "control": true
+    },
+    {
+      "who": "owner",
+      "what": "rotate the agent key to a new address",
+      "result": "done",
+      "tx": "0x35a98c817f8aba939538fa41f039415cb702fd94e02e6c83c0e8e723b95b5aab",
+      "ok": true,
+      "control": true
+    },
+    {
+      "who": "agent",
+      "what": "act with the rotated-out key",
+      "result": "Refused(NoSession)",
+      "ok": true
+    },
+    {
+      "who": "owner",
+      "what": "rotate back to the agent",
+      "result": "done",
+      "tx": "0xe0387d6308100d721a262f37877b74cc97a877fb20b8249c0df7c5b684c7382d",
+      "ok": true,
+      "control": true
+    },
+    {
+      "who": "outsider",
+      "what": "pay a listed bill",
+      "result": "NotAgentPayable(NoSession)",
+      "ok": true
+    },
+    {
+      "who": "outsider",
+      "what": "propose a bill",
+      "result": "Refused(NoSession)",
+      "ok": true
+    },
+    {
+      "who": "outsider",
+      "what": "withdraw",
+      "result": "OwnableUnauthorizedAccount(0xD20A588278462f7A361B78ED7b232F230A1d858b)",
+      "ok": true
+    }
+  ]
+}

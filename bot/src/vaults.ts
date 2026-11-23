@@ -3,6 +3,7 @@
 // reject a proposal, and nothing else. The vault enforces that.
 
 import { createPublicClient, createWalletClient, defineChain, http, parseAbi, parseAbiItem, type Address, type Hex } from "viem";
+import { DEPLOY_BLOCK, logsFrom } from "./logs.ts";
 import { privateKeyToAccount } from "viem/accounts";
 
 export const aevum = defineChain({
@@ -132,7 +133,8 @@ export function viemChain(opts: { rpcUrl: string; factory: Address; guardianKey:
       return out;
     },
     async pending(vault) {
-      const logs = await pub.getLogs({ address: vault, event: PROPOSED, fromBlock: opts.fromBlock ?? 0n, toBlock: "latest" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const logs = await logsFrom<any>(pub as any, { address: vault, event: PROPOSED }, opts.fromBlock ?? (opts.chain && opts.chain.id !== 44005 ? 0n : DEPLOY_BLOCK));
       const seen = new Map<string, Pending>();
       for (const l of logs) seen.set(`${l.args.billId}:${l.args.period}`, { billId: Number(l.args.billId), period: Number(l.args.period), amount: l.args.amount!, note: l.args.note ?? "" });
       const out: Pending[] = [];

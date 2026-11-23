@@ -27,7 +27,10 @@ function load(name) {
 async function agentSigner() {
   if (process.env.AGENT_PRIVATE_KEY) return new ethers.Wallet(process.env.AGENT_PRIVATE_KEY, ethers.provider);
   if (isLocal()) return (await ethers.getSigners())[1];
-  throw new Error("Set AGENT_PRIVATE_KEY (the agent's key) for this network");
+  // The key written by `npm run agent:new-key` (git-ignored).
+  const file = require("path").join(__dirname, "..", "..", "agent.key");
+  if (require("fs").existsSync(file)) return new ethers.Wallet(require("fs").readFileSync(file, "utf8").trim(), ethers.provider);
+  throw new Error("Set AGENT_PRIVATE_KEY (the agent's key) for this network, or run npm run agent:new-key");
 }
 
 /** The revert reason of a call that should fail, decoded against the vault's errors. */
