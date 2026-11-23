@@ -10,11 +10,11 @@
 //   ANTHROPIC_API_KEY    optional, enables the Claude review
 //   SLUICE_FROM_BLOCK    optional, first block to read receipts from
 //   SLUICE_LOCAL=1       optional, use a local Hardhat node instead of Aevum
-//   TELEGRAM_BOT_TOKEN   optional, with TELEGRAM_CHAT_ID: alerts when something needs the owner
+//   TELEGRAM_BOT_TOKEN   optional: alerts to each company's linked chat when something needs its owner
 //   SLUICE_APP_URL       optional, the dashboard's address, linked from alerts
 //   SLUICE_ALERT_STATE   optional, file remembering alerts already sent (default .sluice-alerts.json)
 //   SLUICE_MIN_GAS       optional, alert the operator when the agent's tQDAY falls below this (default 0.2)
-//   OPERATOR_TELEGRAM_CHAT_ID  optional, the operator's chat (agent gas, crashes); default TELEGRAM_CHAT_ID
+//   OPERATOR_TELEGRAM_CHAT_ID  optional, the operator's chat (agent gas); TELEGRAM_CHAT_ID also works
 // A company's own alerts go to the chat its owner linked on the vault (Settings -> Telegram),
 // never to the operator. A vault with no linked chat gets no Telegram alerts.
 // Flags: --dry-run decides everything and signs nothing.
@@ -64,17 +64,20 @@ async function main() {
   if (factory) console.log(`Factory ${factory}: ${found.length} vault(s) gave this agent a live session`);
   console.log(`Sluice agent ${chain.agent}${dryRun ? " (dry run: signs nothing)" : ""}; Claude review ${process.env.ANTHROPIC_API_KEY ? "on" : "off"}`);
 
-  const tg = process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID ? { token: process.env.TELEGRAM_BOT_TOKEN, chatId: process.env.TELEGRAM_CHAT_ID } : null;
+  // The bot token alone turns alerts on: each company's alerts go to the chat its owner linked on
+  // chain. The operator's own chat (agent gas) is optional and only used for the operator's alerts.
+  const tg = process.env.TELEGRAM_BOT_TOKEN ? { token: process.env.TELEGRAM_BOT_TOKEN, chatId: "" } : null;
   const stateFile = process.env.SLUICE_ALERT_STATE || ".sluice-alerts.json";
   let sent = loadSent(stateFile);
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  console.log(`Telegram alerts ${tg ? "on" : "off"}`);
+  const operatorChat = process.env.OPERATOR_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID || "";
+  console.log(`Telegram alerts ${tg ? `on (to each company's linked chat${operatorChat ? "; operator alerts to the operator's chat" : "; no operator chat set"})` : "off (no TELEGRAM_BOT_TOKEN)"}`);
 
   const summary: string[] = [];
   let failed = false;
 
   // The agent's gas is the operator's job, not the founders': this alert goes to the operator's chat.
-  const operator = tg && process.env.OPERATOR_TELEGRAM_CHAT_ID ? { ...tg, chatId: process.env.OPERATOR_TELEGRAM_CHAT_ID } : tg;
+  const operator = tg && operatorChat ? { ...tg, chatId: operatorChat } : null;
   const minGas = process.env.SLUICE_MIN_GAS ? BigInt(Math.round(Number(process.env.SLUICE_MIN_GAS) * 1e6)) * 10n ** 12n : LOW_GAS;
   const gasLeft = await chain.gas().catch(() => null);
   if (gasLeft !== null) {
