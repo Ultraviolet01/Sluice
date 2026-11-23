@@ -45,8 +45,18 @@ export function demoModel(): Model {
     running -= out[i] ?? 0;
     return { day: DEMO_NOW + i * DAY, balance: u(running) };
   });
+  // The last 14 days: a deposit, the agent paying bills, money coming in.
+  const past: Record<number, number> = { [-12]: -2400, [-10]: 6000, [-8]: -80, [-6]: -118, [-3]: 5000, [-1]: -1450 };
+  let back = 18215.4;
+  const history = Array.from({ length: 14 }, (_, k) => {
+    const i = -k;
+    const row = { day: DEMO_NOW + i * DAY, balance: u(back) };
+    back -= past[i] ?? 0;
+    return row;
+  }).reverse();
   return {
     live: false,
+    history,
     name: "Kora Supply Group",
     vault: A("8c2e41b0"),
     token: "0x456569838f1d43009A91ebA4263147Afd7233483",

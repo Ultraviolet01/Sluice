@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { PageHead, Pill, Search, app } from "../components.tsx";
 import { dayLabel, fmt, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
@@ -9,30 +9,91 @@ import legendBuffer from "../assets/icons/legend-buffer.svg";
 import loadline from "../assets/icons/loadline.svg";
 import "./overview.css";
 
-/** The 14-day balance line against the cash buffer, drawn from the forecast. */
+/**
+ * The vault's balance: the last 14 days as they happened (solid, from tUSD8
+ * transfers on chain), today, and the next 14 days with the listed bills
+ * (dashed), against the cash buffer. Hover or tap a day for its balance.
+ */
 function ForecastChart({ m }: { m: Model }) {
-  const W = 684, H = 180, PADL = 30;
-  const pts = m.forecast.map((d) => Number(d.balance) / 1e6);
+  // Drawn at the width it is given, so labels and lines stay aligned on phones.
+  const box = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(684);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const fit = () => setW(Math.max(260, Math.round(el.clientWidth)));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const H = 180, PADL = 34, PADR = 6, TOP = 12, BOT = 14;
+  const hist = m.history.length ? m.history : [{ day: m.forecast[0]?.day ?? 0, balance: m.balance }];
+  const fut = m.forecast;
+  // One row per day: past days, then today, then the forecast days after today.
+  const rows = [
+    ...hist.map((d, i) => ({ day: d.day, v: Number(d.balance) / 1e6, past: i < hist.length - 1, today: i === hist.length - 1 })),
+    ...fut.slice(1).map((d) => ({ day: d.day, v: Number(d.balance) / 1e6, past: false, today: false })),
+  ];
+  const ti = hist.length - 1; // today's index
+  const todayAfter = fut[0] ? Number(fut[0].balance) / 1e6 : rows[ti].v; // after the bills due today
   const buffer = Number(m.cashBuffer) / 1e6;
-  const max = Math.max(...pts, buffer, 1) * 1.1;
-  const min = Math.max(0, Math.min(...pts, buffer) * 0.8);
-  const y = (v: number) => H - 10 - ((v - min) / (max - min)) * (H - 20);
-  const x = (i: number) => PADL + (i / Math.max(1, pts.length - 1)) * (W - PADL - 4);
-  const path = pts.map((v, i) => `${i ? "H" + x(i) + " V" : "M" + x(i) + " "}${y(v)}`).join(" ");
-  const short = m.upcoming.length ? m.forecast.findIndex((d) => d.balance < m.cashBuffer) : -1;
+  const vals = [...rows.map((r) => r.v), todayAfter, buffer, 0];
+  const hi = Math.max(...vals), lo = Math.min(...vals);
+  const span = hi - lo || 1;
+  const max = hi + span * 0.12, min = lo < 0 ? lo - span * 0.12 : Math.max(0, lo - span * 0.12);
+  const y = (v: number) => TOP + (1 - (v - min) / (max - min)) * (H - TOP - BOT);
+  const x = (i: number) => PADL + (i / Math.max(1, rows.length - 1)) * (W - PADL - PADR);
+  // Steps: a balance changes at the start of the day it moves.
+  const step = (from: number, to: number, start: number) => {
+    let d = `M${x(from)} ${y(start)}`;
+    for (let i = from + 1; i <= to; i++) d += ` H${x(i)} V${y(i === ti ? rows[i].v : rows[i].v)}`;
+    return d;
+  };
+  const pastPath = step(0, ti, rows[0].v);
+  let futPath = `M${x(ti)} ${y(rows[ti].v)} V${y(todayAfter)}`;
+  for (let i = ti + 1; i < rows.length; i++) futPath += ` H${x(i)} V${y(rows[i].v)}`;
+  const short = m.upcoming.length ? fut.findIndex((d) => d.balance < m.cashBuffer) : -1;
+  const shortIdx = short < 0 ? -1 : short === 0 ? ti : ti + short;
+  const [hover, setHover] = useState<number | null>(null);
+  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width) * W;
+    const i = Math.round(((px - PADL) / (W - PADL - PADR)) * (rows.length - 1));
+    setHover(Math.max(0, Math.min(rows.length - 1, i)));
+  };
+  const hv = hover === null ? null : hover === ti ? { ...rows[ti], v: rows[ti].v } : rows[hover];
+  const fmtV = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const labels = [0, Math.floor(ti / 2), ti, ti + Math.floor((rows.length - 1 - ti) / 2), rows.length - 1].filter((i, k, a) => rows[i] && a.indexOf(i) === k);
   return (
-    <div className="ov-chart">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="plot" role="img" aria-label="Balance forecast for the next 14 days">
-        <line x1={PADL} x2={W} y1={y(max / 1.1)} y2={y(max / 1.1)} stroke="var(--border-default)" />
-        <line x1={PADL} x2={W} y1={y(buffer)} y2={y(buffer)} stroke="var(--accent-brass)" strokeDasharray="3 3" />
-        <path d={`${path} V${H - 10} H${PADL} Z`} fill="var(--accent-sluice-tint)" opacity=".5" />
-        <path d={path} fill="none" stroke="var(--accent-sluice)" strokeWidth="2" />
-        {short >= 0 && <circle cx={x(short)} cy={y(pts[short])} r="5" fill="#fff" stroke="var(--status-critical)" strokeWidth="2" />}
+    <div className="ov-chart" ref={box}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="plot" role="img" aria-label="Vault balance: the last 14 days and the next 14 days" onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
+        <rect x={x(ti)} y={0} width={W - x(ti)} height={H} fill="var(--bg-canvas)" opacity=".6" />
+        {min < 0 && <line x1={PADL} x2={W - PADR} y1={y(0)} y2={y(0)} stroke="var(--border-strong)" />}
+        <line x1={PADL} x2={W - PADR} y1={y(buffer)} y2={y(buffer)} stroke="var(--accent-brass)" strokeDasharray="3 3" />
+        <path d={`${pastPath} V${y(Math.max(min, 0))} H${x(0)} Z`} fill="var(--accent-sluice-tint)" opacity=".55" className="ov-area" />
+        <path key={`p${rows.length}${rows[ti].v}`} d={pastPath} fill="none" stroke="var(--accent-sluice)" strokeWidth="2.25" pathLength={1} className="ov-line" />
+        <path key={`f${todayAfter}`} d={futPath} fill="none" stroke="var(--accent-sluice)" strokeWidth="2" strokeDasharray="5 4" opacity=".85" className="ov-future" />
+        <line x1={x(ti)} x2={x(ti)} y1={TOP - 6} y2={H - BOT} stroke="var(--text-tertiary)" strokeDasharray="2 3" />
+        <circle cx={x(ti)} cy={y(rows[ti].v)} r="5" fill="var(--accent-sluice)" className="ov-now" />
+        {shortIdx >= 0 && <circle cx={x(shortIdx)} cy={y(shortIdx === ti ? todayAfter : rows[shortIdx].v)} r="5" fill="#fff" stroke="var(--status-critical)" strokeWidth="2" />}
+        {hv && hover !== null && (
+          <g pointerEvents="none">
+            <line x1={x(hover)} x2={x(hover)} y1={TOP} y2={H - BOT} stroke="var(--accent-sluice)" strokeOpacity=".35" />
+            <circle cx={x(hover)} cy={y(hv.v)} r="4" fill="var(--bg-surface)" stroke="var(--accent-sluice)" strokeWidth="2" />
+          </g>
+        )}
       </svg>
-      {short >= 0 && <span className="ov-chip critical" style={{ left: Math.min(x(short), W - 150) }}>Below buffer {dayLabel(m.forecast[short].day)}</span>}
-      <span className="axis y top">{Math.round(max / 1.1).toLocaleString("en-US")}</span>
+      {hv && hover !== null && (
+        <span className="ov-tip" style={{ left: Math.min(Math.max(x(hover), 70), W - 70) }}>
+          <b>{fmtV(hv.v)} tUSD8</b> {hv.today ? "now" : `${hv.past ? "on" : "by"} ${dayLabel(hv.day)}`}{hv.today && todayAfter !== hv.v ? ` · ${fmtV(todayAfter)} after today's bills` : ""}
+        </span>
+      )}
+      {shortIdx >= 0 && <span className="ov-chip critical" style={{ left: Math.min(x(shortIdx), W - 150) }}>Below buffer {dayLabel(fut[short].day)}</span>}
+      <span className="axis y top">{Math.round(max).toLocaleString("en-US")}</span>
+      {min < 0 && <span className="axis y" style={{ top: y(0) - 8 }}>0</span>}
       <div className="axis x">
-        {[0, 3, 6, 9, 13].map((i) => m.forecast[i] && <span key={i}>{dayLabel(m.forecast[i].day)}</span>)}
+        {labels.map((i) => <span key={i} style={{ left: x(i) }}>{i === ti ? "Today" : dayLabel(rows[i].day)}</span>)}
       </div>
     </div>
   );
@@ -71,11 +132,12 @@ export default function Overview() {
               <p className="faint small">SluiceVault on Aevum Testnet</p>
             </div>
             <div className="ov-legend">
-              <span><img src={legendWith} width={16} height={2} alt="" />Balance with listed bills</span>
+              <span><img src={legendWith} width={16} height={2} alt="" />Balance, last 14 days</span>
+              <span><i className="ov-dash" aria-hidden="true" />Next 14 days, with listed bills</span>
               <span><img src={legendBuffer} width={16} height={2} alt="" />Cash buffer</span>
             </div>
           </div>
-          <p className="faint xs">Next 14 days</p>
+          <p className="faint xs">Last 14 days and next 14 days · updates every 30 seconds</p>
           <ForecastChart m={m} />
         </section>
 

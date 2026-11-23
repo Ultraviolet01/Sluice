@@ -70,6 +70,8 @@ export interface Model {
   bills: Bill[];
   upcoming: { billId: number; period: number; label: string; payee: Address; due: number; amount: bigint; kind: Kind; status: string }[];
   forecast: { day: number; balance: bigint }[];
+  /** The real balance at the end of each of the last 14 days, oldest first (today last). */
+  history: { day: number; balance: bigint }[];
   approvals: ApprovalRow[];
   activity: ActivityRow[];
   payees: PayeeRow[];
@@ -234,6 +236,9 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
     return { billId: x.bill.id, period: x.period, label: x.bill.label, payee: x.bill.payee, due: x.due, amount: x.bill.amount, kind, status };
   });
   const forecast = runForecast(balance, items.filter((x) => !payees.get(x.bill.payee.toLowerCase())?.blocked), now).map((d) => ({ day: d.day, balance: d.balance }));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const moves = await vaultMoves(publicClient as any, token, vault, fromBlock).catch(() => null);
+  const history = moves ? balanceHistory(balance, moves, now) : [];
 
   return {
     live: true,
@@ -242,7 +247,7 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
     pendingOwner: pendingRaw === "0x0000000000000000000000000000000000000000" ? null : pendingRaw,
     guardian: guardianRaw === "0x0000000000000000000000000000000000000000" ? null : guardianRaw,
     notifyChat,
-    balance, cashBuffer, threshold, session, bills, upcoming, forecast,
+    balance, cashBuffer, threshold, session, bills, upcoming, forecast, history,
     approvals: [...latest.values()].sort((a, b) => b.createdAt - a.createdAt),
     activity,
     payees: [...payees.values()],
@@ -251,6 +256,7 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
 
 export { fmt, toUnits } from "./units.ts";
 import { logsFrom } from "./logs.ts";
+import { balanceHistory, vaultMoves } from "./history.ts";
 import { fmt } from "./units.ts";
 
 export const when = (t: number) =>
