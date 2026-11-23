@@ -20,7 +20,7 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 | 9 | `docs/VERIFIED.md` | **Written** (every function live, the agent, attacks, flood). Generator: `node scripts/verified.mjs` in `contracts/` writes it from the records of steps 1, 6, 7 and 8, with explorer links. Add by hand: an Actions run log, a Telegram alert, a dashboard sign-up | — |
 | 10 | Narrated demo | **Script ready**: `cd agent && npm run demo` tells one round step by step on the demo company (`-- --dry-run` signs nothing) | Agent key |
 | 11 | Key scripts | **Done**: `agent:new-key`, `agent:fund`, and `agent:rotate` (hires the new key on every vault you own, keeping each vault's caps; the old key stops in the same transaction; `DRY_RUN=1` shows the plan). Tested locally | — |
-| 12 | Demo video | Record it; link it without a login | Recording |
+| 12 | Demo video | **Done**: https://youtu.be/HUCGmNpz2mI (public, no login) | — |
 | 13 | Submission checklist | Fill the open rows in `docs/JUDGING.md`: vault and factory addresses, explorer links, hosted app link, video | — |
 | 14 | Testnet checks in `npm run verify` | Once `contracts/deployments/aevumTestnet-deploy.json` exists, verify also checks the live network: the factory answers, the vault's owner and token are right, and an agent dry run on the demo company decides every bill | — |
 

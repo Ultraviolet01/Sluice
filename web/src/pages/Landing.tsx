@@ -62,7 +62,7 @@ export default function Landing() {
           <span className="ld-spacer" />
           <div className="ld-ctas">
             <a className="ld-pill" href="#/app/overview">Open app</a>
-            <a className="ld-pill-outline" href={REPO} target="_blank" rel="noreferrer">Watch the demo</a>
+            <a className="ld-pill-outline" href="https://youtu.be/HUCGmNpz2mI" target="_blank" rel="noreferrer">Watch the demo</a>
           </div>
         </div>
       </header>

@@ -6,7 +6,7 @@ Small and mid-size companies have no treasury team. Bills are paid by hand, cash
 
 Sluice keeps the money in the company's own vault on **QDay Aevum** and lets the agent settle only the bills the owner listed: that payee, that amount, that schedule. Anything outside the owner's limits waits for the owner. The rules live in the contract, so they hold even if the agent's model is fooled or its key is stolen.
 
-**Live:** https://usesluice.vercel.app · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot)
+**Live:** https://usesluice.vercel.app · **Demo video:** https://youtu.be/HUCGmNpz2mI · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot)
 
 **Contents:** [Proven live](#proven-live-on-aevum-testnet) · [How it works](#how-it-works) · [Who it's for](#who-its-for) · [Guardrails](#guardrails-enforced-on-chain) · [Check it](#check-it) · [Run it yourself](#run-it-yourself) · [API reference](#api-reference) · [Known limits](#known-limits) · [**Roadmap**](#roadmap-to-mainnet) · [Team](#team)
 
@@ -286,7 +286,9 @@ Details: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
 
 ## Demo video
 
-Recording in progress. The link will be added here, viewable without a login.
+[![Sluice demo video](https://img.youtube.com/vi/HUCGmNpz2mI/hqdefault.jpg)](https://youtu.be/HUCGmNpz2mI)
+
+**https://youtu.be/HUCGmNpz2mI** (3:31). Real screen recordings of Sluice working on Aevum Testnet: a company created, an invoice read by Claude, payees approved and blocked, the agent's real round (including Claude catching a lookalike vendor), approvals and a rejection signed on chain, the Telegram bot, the Excel report, and every transaction opened on the explorer.
 
 ## Team
 
