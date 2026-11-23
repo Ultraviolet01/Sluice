@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type Anthropic from "@anthropic-ai/sdk";
 import { handle } from "./read-invoice.ts";
 
-const fake = (text: string) => ({ beta: { messages: { create: async () => ({ stop_reason: "end_turn", content: [{ type: "text", text }] }) } } }) as unknown as Anthropic;
+const fake = (text: string) => ({ messages: { create: async () => ({ stop_reason: "end_turn", content: [{ type: "text", text }] }) } }) as unknown as Anthropic;
 const req = (body: unknown, headers: Record<string, string> = {}) =>
   new Request("http://x/api/read-invoice", { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
 

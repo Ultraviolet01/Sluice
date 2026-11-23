@@ -6,7 +6,9 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 
-const MODEL = "claude-opus-5-5";
+// Claude Haiku 5.5: the cheapest current model, reads PDFs and photos well. Every field is
+// re-checked below and by the owner before signing, so a cheap model is safe here.
+const MODEL = "claude-haiku-5-5";
 const MAX_BASE64 = 6_000_000; // about 4.5 MB of file
 const TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"] as const;
 type MediaType = (typeof TYPES)[number];
@@ -73,16 +75,15 @@ export async function handle(request: Request, client?: Anthropic): Promise<Resp
       ? ({ type: "document", source: { type: "base64", media_type: "application/pdf", data } } as const)
       : ({ type: "image", source: { type: "base64", media_type: media, data } } as const);
   try {
-    const msg = await c.beta.messages.create({
+    // Thinking counts toward max_tokens; leave room before the short JSON answer.
+    const msg = await c.messages.create({
       model: MODEL,
       max_tokens: 4000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
+      output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
       system: SYSTEM,
       messages: [{ role: "user", content: [file, { type: "text", text: "Fill in the draft bill from this invoice." }] }],
     });
-    if (msg.stop_reason === "refusal") return fail(422, "The invoice could not be read");
+    if (msg.stop_reason === "refusal" || msg.stop_reason === "max_tokens") return fail(422, "The invoice could not be read");
     const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
     const raw = JSON.parse(text) as Record<string, unknown>;
     const address = clean(raw.address, 42);
