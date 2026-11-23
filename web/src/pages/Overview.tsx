@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PageHead, Pill, Search } from "../components.tsx";
+import { PageHead, Pill, Search, app } from "../components.tsx";
 import { dayLabel, fmt, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
 import { BillForm } from "./BillForm.tsx";
@@ -56,7 +56,7 @@ export default function Overview() {
     <>
       <PageHead title="Overview" sub={`${today}, ${short ? "1 shortfall ahead" : "no shortfall ahead"}, ${waiting.length} item${waiting.length === 1 ? "" : "s"} need you`}>
         <Search />
-        <a className="btn btn-secondary" href="#/app/activity">Export</a>
+        <a className="btn btn-secondary" href={app("activity")}>Export</a>
         <button className="btn btn-primary" onClick={() => setAdding(true)}>New bill</button>
       </PageHead>
       {adding && <BillForm onClose={() => setAdding(false)} />}
@@ -88,7 +88,7 @@ export default function Overview() {
               <p className="muted xs">{a.why[0].toUpperCase() + a.why.slice(1)}</p>
             </div>
           ))}
-          <a className="btn btn-primary btn-block" href="#/app/approvals">{waiting.length ? `Review ${waiting.length} item${waiting.length === 1 ? "" : "s"}` : "Open approvals"}</a>
+          <a className="btn btn-primary btn-block" href={app("approvals")}>{waiting.length ? `Review ${waiting.length} item${waiting.length === 1 ? "" : "s"}` : "Open approvals"}</a>
         </section>
       </div>
 
@@ -126,7 +126,7 @@ export default function Overview() {
         <section className="card ov-decisions">
           <div className="row-between" style={{ paddingBottom: 12 }}>
             <div className="grow"><p className="card-title">Sluice's decisions</p><p className="card-sub">Every move, with the rule it checked</p></div>
-            <a className="btn btn-ghost" href="#/app/activity">View all</a>
+            <a className="btn btn-ghost" href={app("activity")}>View all</a>
           </div>
           {m.activity.length === 0 && <p className="muted small">No activity yet.</p>}
           {m.activity.slice(0, 4).map((d, i) => (

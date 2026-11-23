@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { isAddress, type Address } from "viem";
-import { Modal, PageHead, Pill } from "../components.tsx";
+import { Modal, PageHead, Pill, app } from "../components.tsx";
 import { EXPLORER, short } from "../chain.ts";
 import { fmt, toUnits, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
@@ -170,7 +170,7 @@ export default function Rules() {
         </div>
         <div className="ru-agent-actions">
           <button className="btn ru-dark-danger" onClick={() => act(m.paused ? "Payments resumed" : "All agent payments paused", { fn: m.paused ? "unpause" : "pause", args: [] }, (mm) => ({ ...mm, paused: !mm.paused }))}>{m.paused ? "Resume payments" : "Pause all payments"}</button>
-          <a className="btn ru-dark" href="#/app/settings">Manage agent key</a>
+          <a className="btn ru-dark" href={app("settings")}>Manage agent key</a>
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { isAddress, type Address } from "viem";
-import { Modal, PageHead, Pill } from "../components.tsx";
+import { Modal, PageHead, Pill, app } from "../components.tsx";
 import { EXPLORER, TUSD8 } from "../chain.ts";
 import { dayLabel, fmt, toUnits } from "../model.ts";
 import { useApp } from "../state.tsx";
@@ -113,14 +113,14 @@ export default function Wallets() {
           {lowest < m.cashBuffer ? (
             <div className="wl-warn">
               <div className="grow"><p className="t14">The balance would fall to {fmt(lowest)}, under the {fmt(m.cashBuffer)} buffer</p><p className="muted xs">Sluice will not pay past the buffer on its own. Deposit, lower the buffer, or approve the bill knowingly.</p></div>
-              <a className="btn btn-primary" href="#/app/approvals">Review</a>
+              <a className="btn btn-primary" href={app("approvals")}>Review</a>
             </div>
           ) : (
             <p className="muted small">Every listed bill in the next 14 days is covered, and the buffer holds.</p>
           )}
 
           <div>
-            <div className="row-between" style={{ paddingBottom: 8 }}><p className="grow t14">Rules for this vault</p><a className="btn btn-ghost" href="#/app/rules">Edit in Rules</a></div>
+            <div className="row-between" style={{ paddingBottom: 8 }}><p className="grow t14">Rules for this vault</p><a className="btn btn-ghost" href={app("rules")}>Edit in Rules</a></div>
             <div className="kv"><span className="k">Cash buffer</span><span className="v">{fmt(m.cashBuffer)} tUSD8</span></div>
             <div className="kv"><span className="k">Approval needed above</span><span className="v">{fmt(m.threshold)} tUSD8</span></div>
             <div className="kv"><span className="k">Owner</span><span className="v mono xs">{m.owner}</span></div>

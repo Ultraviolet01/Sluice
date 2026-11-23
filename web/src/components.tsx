@@ -114,3 +114,9 @@ export function Sidebar({ route }: { route: string }) {
     </aside>
   );
 }
+
+/** A link to another app page that keeps the open company (?vault=…) in the address. */
+export function app(path: string): string {
+  const q = window.location.hash.split("?")[1];
+  return `#/app/${path}${q ? "?" + q : ""}`;
+}

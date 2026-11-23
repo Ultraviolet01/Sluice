@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Address } from "viem";
-import { Modal } from "../components.tsx";
+import { Modal, app } from "../components.tsx";
 import { FACTORY, HOSTED_AGENT, createCompany, deposit, errorText, explorerTxUrl, myCompanies, ownerSend, short, tokenBalance } from "../chain.ts";
 import { fmt, toUnits, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
@@ -309,9 +309,9 @@ export function GetStarted() {
   const s = m.session;
   const steps = [
     { done: m.balance > 0n, title: "Fund the vault", body: "Deposit tUSD8 for the bills Sluice will pay.", action: <button className="btn btn-primary ac-sm" onClick={() => setDepositing(true)}>Deposit</button> },
-    { done: m.payees.some((p) => p.allowed && !p.blocked), title: "Approve your payees", body: "Bills to approved payees can be paid without asking you.", action: <a className="btn btn-secondary ac-sm" href="#/app/rules">Add payees</a> },
-    { done: m.bills.some((b) => b.active), title: "List your bills", body: "Sluice can only pay bills on this list. Import a CSV or invoices.", action: <a className="btn btn-secondary ac-sm" href="#/app/rules">Add bills</a> },
-    { done: Boolean(s?.active && s.expiresAt > Date.now() / 1000), title: "Hire the agent", body: "Give it a session with a cap per payment, a 24-hour budget and an expiry.", action: <a className="btn btn-secondary ac-sm" href="#/app/settings">Grant a session</a> },
+    { done: m.payees.some((p) => p.allowed && !p.blocked), title: "Approve your payees", body: "Bills to approved payees can be paid without asking you.", action: <a className="btn btn-secondary ac-sm" href={app("rules")}>Add payees</a> },
+    { done: m.bills.some((b) => b.active), title: "List your bills", body: "Sluice can only pay bills on this list. Import a CSV or invoices.", action: <a className="btn btn-secondary ac-sm" href={app("rules")}>Add bills</a> },
+    { done: Boolean(s?.active && s.expiresAt > Date.now() / 1000), title: "Hire the agent", body: "Give it a session with a cap per payment, a 24-hour budget and an expiry.", action: <a className="btn btn-secondary ac-sm" href={app("settings")}>Grant a session</a> },
   ];
   const left = steps.filter((x) => !x.done).length;
   if (!left) return null;
