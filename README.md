@@ -6,6 +6,8 @@ Small and mid-size companies have no treasury team. Bills are paid by hand, cash
 
 Sluice keeps the money in the company's own vault on **QDay Aevum** and lets the agent settle only the bills the owner listed: that payee, that amount, that schedule. Anything outside the owner's limits waits for the owner. The rules live in the contract, so they hold even if the agent's model is fooled or its key is stolen.
 
+**Live:** https://usesluice.vercel.app · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot)
+
 Built for **Aevum Builder Challenge #1** · tracks: Native AI Assistants, Invoice Payments.
 
 > All code in this repository was written during the build window (Nov 16 to Dec 11, 2026).
