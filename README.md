@@ -106,6 +106,7 @@ Demo data by default; add `?vault=0x…` to the address (`#/app/overview?vault=0
 | Demo company (Kora Supply Group) | [`0x4cd19a15A37Dc241938b9B0Bee67E007556554ce`](https://explorer-test.qday.info/address/0x4cd19a15A37Dc241938b9B0Bee67E007556554ce) |
 | Agent | `0x2ea4bf1d859918adf150F032F7E0C233f5498d3A` |
 | Deployed at block | `3911562` |
+| Source | Verified on the explorer (`node scripts/verify-explorer.mjs` in `contracts/`) |
 
 Deploy (needs tQDAY for gas):
 
