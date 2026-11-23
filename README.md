@@ -33,16 +33,34 @@ Both contracts' source code is verified on the explorer: [SluiceFactory](https:/
 
 ```mermaid
 flowchart LR
-  O["Owner<br/>(MetaMask)"] -- "list bills, set limits,<br/>approve, pause, withdraw" --> V
-  subgraph Aevum Testnet
+  O["Owner<br/>(MetaMask)"]
+  T["Owner's Telegram"]
+  subgraph Vercel
+    W["Dashboard<br/>usesluice.vercel.app"]
+    R["Invoice reader<br/>/api/read-invoice"]
+  end
+  subgraph Railway
+    A["Sluice agent<br/>every 15 min"]
+    B["Telegram bot<br/>always on"]
+  end
+  subgraph Aevum["QDay Aevum Testnet"]
+    F["SluiceFactory"]
     V["SluiceVault<br/>holds tUSD8<br/>enforces the line"]
   end
-  A["Sluice agent<br/>Railway, every 15 min"] -- "checkPayment" --> V
-  A -- "pay(bill, period)<br/>propose(bill, period)" --> V
-  A -. "second look,<br/>stricter only" .-> C["Claude Haiku 5.5"]
-  V -- "tUSD8" --> P["Payees"]
-  W["Dashboard<br/>(web)"] -- "reads events" --> V
-  O --- W
+  C["Claude Haiku 5.5"]
+  P["Payees"]
+  O -- "sign: list bills, set limits,<br/>approve, pause, withdraw" --> W
+  W -- "transactions" --> V
+  W -- "createVault" --> F
+  F -- "creates" --> V
+  W -- "PDF or photo" --> R
+  R -. "draft bill" .-> C
+  A -- "checkPayment, pay, propose" --> V
+  A -. "second look, stricter only;<br/>plain-English reasons" .-> C
+  A -- "alerts" --> T
+  T -- "commands, Reject / Block" --> B
+  B -- "pause, block, reject<br/>(guardian key)" --> V
+  V -- "tUSD8" --> P
 ```
 
 1. **The owner lists bills and sets the line**: per-payment cap, rolling 24-hour budget, cash buffer, approval threshold, approved and blocked payees, and a session for the agent with an expiry.
@@ -56,6 +74,12 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 **Telegram ([@Sluice1_bot](https://t.me/Sluice1_bot)).** The owner links a chat from Settings with one signature, and the agent's alerts for that company go only there: a bill waiting for approval (with Reject and Block payee buttons), a refused payment, a shortfall ahead, the agent's session about to end. `/balance`, `/bills` and `/pending` answer in the chat. If the owner turns on Telegram actions, the bot can also pause the vault, block a payee or reject a proposal: it is the vault's *guardian*, a key that can only make the vault stricter.
 
 **Reports.** *Export to Excel* on the Activity page downloads a treasury report for any period: Summary, Activity, Payments, Ledger (every tUSD8 in and out, named from the vault's own records), Rule changes (each with the owner's reason as written on chain) and Wallets, with explorer links.
+
+## Who it's for
+
+Small and mid-size companies with recurring bills and no treasury team: agencies, studios, small importers, DAOs and crypto-native startups that already hold stablecoins. Today a founder either pays every invoice by hand or hands a bookkeeper (or a script) the keys. Sluice gives them the automation without the key risk: bills paid on time, a shortfall seen 14 days ahead, and fake "new bank details" invoices refused by the contract itself.
+
+How it would reach them: a free tier for one company and a few bills, then a monthly fee per company for the hosted agent and Telegram alerts (the vault stays the owner's, so they can leave at any time and keep their money and history). The first users would come from teams already paying contractors and software in stablecoins, through the wallets and accounting tools they use. These are plans, not validated numbers.
 
 ## Where it runs
 
@@ -154,6 +178,74 @@ Fill in `DEPLOYER_PRIVATE_KEY` and `OWNER_ADDRESS` (`.env` is gitignored), then:
 npm run deploy
 ```
 
+## Platform integrations
+
+| Platform | How Sluice uses it |
+|---|---|
+| **QDay Aevum Testnet** (chain 44005) | Both contracts are deployed and source-verified there; every payment, proposal, rule change and receipt is an Aevum transaction or event |
+| **tUSD8** | The only money the vault holds and pays out (6 decimals); deposits are plain ERC-20 transfers to the vault |
+| **QDay explorer** | Every receipt in the dashboard, the Telegram alerts, the Excel report and [docs/VERIFIED.md](docs/VERIFIED.md) links to it |
+| **Claude Haiku 5.5** (Anthropic) | Three jobs, never the final say: a second look at each payment the agent would make alone (can only make it stricter), the plain-English reason on each proposal, and reading invoices into draft bills |
+| **Telegram** | Alerts to the chat each owner links on chain; commands and guardian actions through [@Sluice1_bot](https://t.me/Sluice1_bot) |
+| **MetaMask** (any EIP-1193 wallet) | The owner signs every rule change, approval and withdrawal; the site adds Aevum to the wallet if needed |
+| **Vercel** | Hosts the dashboard and the invoice reader function |
+| **Railway** | Runs the agent every 15 minutes and the Telegram bot around the clock |
+| **GitHub Actions** | Runs every test on each push, and one agent round by hand when wanted |
+
+## Run it yourself
+
+Everything runs on a laptop against a local chain first (see [Check it](#check-it)). To run your own copy on Aevum Testnet:
+
+1. **Wallet**: add Aevum Testnet (chain 44005, RPC `https://rpc-test.qday.info`) and get tQDAY and tUSD8 from the [faucet](https://faucet.qday.info/en).
+2. **Contracts**: `cd contracts && cp .env.example .env`, fill in `DEPLOYER_PRIVATE_KEY` and `OWNER_ADDRESS`, then `npm run deploy`. Verify the source with `node scripts/verify-explorer.mjs`.
+3. **Agent key**: `npm run agent:new-key` (writes `contracts/agent.key`, git-ignored), then `npm run agent:fund -- --network aevumTestnet`.
+4. **Dashboard**: in `web/`, set `VITE_FACTORY_ADDRESS`, `VITE_AGENT_ADDRESS`, `VITE_FROM_BLOCK` (and `ANTHROPIC_API_KEY` for the invoice reader), then `npm run build`. Any static host works; Vercel also runs `api/read-invoice.ts`. All settings: [web/README.md](web/README.md).
+5. **Agent**: run `npm run agent` in `agent/` on a schedule with `AGENT_PRIVATE_KEY`, `SLUICE_FACTORY`, `SLUICE_FROM_BLOCK`, and optionally `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `SLUICE_APP_URL`, `SLUICE_ALERT_STATE`. Railway: root directory `agent`, cron `*/15 * * * *`. All settings: [agent/README.md](agent/README.md).
+6. **Telegram bot** (optional): `npm start` in `bot/` with `TELEGRAM_BOT_TOKEN`, `BOT_GUARDIAN_KEY`, `SLUICE_FACTORY`, `SLUICE_APP_URL`. Steps: [bot/README.md](bot/README.md).
+
+## API reference
+
+### SluiceVault (one per company)
+
+| Who | Function | What it does |
+|---|---|---|
+| Owner | `addBill(payee, amount, firstDue, intervalDays, critical, label)`, `addBills(bills[])` | List bills (up to 50 at once). The agent can only ever pay these |
+| Owner | `cancelBill(billId, reason)`, `releaseBill(billId, period)` | Stop a bill; reopen a rejected period |
+| Owner | `setPayeeAllowed` / `setPayeesAllowed`, `setPayeeBlocked` / `setPayeesBlocked` | Approved and blocked payees, one or many, each with a reason |
+| Owner | `setCashBuffer(amount, reason)`, `setApprovalThreshold(amount, reason)` | Money the agent must leave in the vault; size above which bills wait for the owner |
+| Owner | `grantSession(agent, perPaymentCap, dailyCap, expiresAt, reason)`, `revokeSession(agent, reason)` | Hire, limit or fire the agent; granting a new agent revokes the old key |
+| Owner | `approve(billId, period)` | Pay a proposed bill |
+| Owner | `withdraw(to, amount)`, `unpause()` | Take money out (works even while paused); resume |
+| Owner | `setGuardian(address, reason)`, `setNotifyChat(chat)` | Turn Telegram actions on or off; link the alert chat |
+| Owner | `transferOwnership(to)` / new owner `acceptOwnership()` | Two-step hand-over |
+| Owner or guardian | `pause()`, `reject(billId, period)`, `guardianBlock(payee, reason)` | Make the vault stricter |
+| Agent | `pay(billId, period)` | Pay a listed bill inside every limit. Takes no payee and no amount |
+| Agent | `propose(billId, period, note)` | Send a bill to the owner with a reason |
+| Anyone | `checkPayment(agent, billId, period)` | `RunsAlone`, `NeedsApproval` or `Blocked`, and the reason code |
+| Anyone | `getBill`, `billCount`, `dueAt`, `balance`, `spentInWindow`, `remainingDailyBudget`, `sessions`, `settlements` | Read the vault's state |
+
+Events, all with the owner's reason where one applies: `BillAdded`, `BillCancelled`, `BillReleased`, `BillPaid` (says whether the owner approved it), `PaymentProposed`, `PaymentRejected`, `PolicyChanged` (old and new value), `PayeeAllowed`, `PayeeBlocked`, `SessionGranted`, `SessionRevoked`, `GuardianSet`, `NotifyChatSet`, `Withdrawn`, plus OpenZeppelin's `Paused`, `Unpaused` and ownership events.
+
+### SluiceFactory
+
+`createVault(name, cashBuffer, approvalThreshold)` creates a vault owned by the caller (at most 20 per creator). Reads: `vaultCount()`, `vaultAt(i)`, `vaultsCreatedBy(creator)`, `nameOf(vault)`, `isVault(address)`. Event: `VaultCreated(creator, vault, name)`.
+
+### Invoice reader (HTTP)
+
+`POST /api/read-invoice` with JSON `{ "media_type": "application/pdf" | "image/png" | "image/jpeg" | "image/webp", "data": "<base64, under 4.5 MB>" }` returns `{ "draft": { "vendor", "address", "amount", "due", "summary" } }`, or `{ "error" }`. Same-site only, rate-limited, stores nothing. The owner still checks and signs the bill.
+
+### Telegram bot
+
+`/balance`, `/bills`, `/pending`, `/pause`, `/block 0x… reason`, `/vaults`, `/help`. Buttons on alerts: Reject, Block payee, Approve in Sluice (opens the dashboard). Details: [bot/README.md](bot/README.md).
+
+## Assumptions
+
+- The owner's wallet is safe. The owner can do anything to their own vault; Sluice protects the company from the agent and from fake invoices, not from its own owner.
+- Payee addresses listed by the owner are correct. Sluice pays only listed bills to their listed payees, so the risk moves to the moment a bill is listed, where the owner signs it.
+- Bills are in tUSD8 on Aevum. Other tokens and other chains are on the roadmap.
+- A round every 15 minutes is fast enough for bills, and a missed round is harmless: the vault remembers what was settled, so the next round picks up where the last stopped.
+- Claude may be wrong or unavailable. It can only make a decision stricter, and without it the agent follows its rules.
+
 ## Repository
 
 | Folder | What |
@@ -190,6 +282,14 @@ Details: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
 - viem, @anthropic-ai/sdk, tsx (MIT) for the agent
 - tsx, viem (MIT) for the Telegram bot
 - React 18, Vite 5, viem, ExcelJS, three.js (MIT) for the dashboard; Fraunces, Hanken Grotesk and Geist Mono from Google Fonts (OFL)
+
+## Demo video
+
+Recording in progress; the script is in [docs/DEMO.md](docs/DEMO.md). The link will be added here, viewable without a login.
+
+## Team
+
+- **ultraviolet01** ([GitHub](https://github.com/Ultraviolet01)): design, contracts, agent, dashboard and bot. Solo entry.
 
 ## License
 
