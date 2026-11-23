@@ -1,31 +1,89 @@
 # Sluice
 
-A metered gate for company money. Sluice is a stablecoin vault on **QDay Aevum Testnet** that lets an AI agent pay invoices in **tUSD8**, but only through on-chain limits the company sets and can revoke at any time.
+**An AI agent that pays your company's bills, but can't spend past the line you set.**
 
-Built for Aevum Builder Challenge #1 (Native AI Assistants / Invoice Payments).
+Small and mid-size companies have no treasury team. Bills are paid by hand, cash runs short without warning, and fake "we changed our bank details" invoices took about $3 billion from US businesses in 2025. An AI agent could do the work, but handing it a wallet key lets it spend everything, including on the next phishing invoice.
 
-> Design lineage: the treasury-agent concept follows the author's earlier project Keel (NEAR). Sluice is a new implementation for EVM/Aevum; all code here was written during the build window.
+Sluice keeps the money in the company's own vault on **QDay Aevum** and lets the agent settle only the bills the owner listed: that payee, that amount, that schedule. Anything outside the owner's limits waits for the owner. The rules live in the contract, so they hold even if the agent's model is fooled or its key is stolen.
 
-## Why
-Letting an AI agent touch company funds is only acceptable if the agent *cannot* overspend, pay the wrong party, or keep acting after you pull the plug, even when its model is wrong or prompt-injected. Sluice puts those rules in the contract, not in the prompt.
+Built for **Aevum Builder Challenge #1** · tracks: Native AI Assistants, Invoice Payments.
+
+> Design lineage: the treasury-agent idea follows the author's earlier project Keel (NEAR). Sluice is a new implementation for EVM and Aevum; all code here was written during the build window.
+
+## How it works
+
+```mermaid
+flowchart LR
+  O["Owner<br/>(MetaMask)"] -- "list bills, set limits,<br/>approve, pause, withdraw" --> V
+  subgraph Aevum Testnet
+    V["SluiceVault<br/>holds tUSD8<br/>enforces the line"]
+  end
+  A["Sluice agent<br/>GitHub Actions, every 15 min"] -- "checkPayment" --> V
+  A -- "pay(bill, period)<br/>propose(bill, period)" --> V
+  A -. "second look,<br/>stricter only" .-> C["Claude Haiku 5.5"]
+  V -- "tUSD8" --> P["Payees"]
+  W["Dashboard<br/>(web)"] -- "reads events" --> V
+  O --- W
+```
+
+1. **The owner lists bills and sets the line**: per-payment cap, rolling 24-hour budget, cash buffer, approval threshold, approved and blocked payees, and a session for the agent with an expiry.
+2. **The agent runs every 15 minutes.** It forecasts the next 14 days, asks the vault about each bill that's due, and pays what fits. A bill that's over the line, to a new payee, or more than 25% above that payee's usual amount goes to the owner as a proposal. Before paying anything alone, an injection guard and then Claude Haiku 5.5 take a second look, and can only make the decision stricter.
+3. **The owner signs the big ones** in the dashboard, with the reasons and policy checks laid out. Every payment and rule change is a receipt on chain.
 
 ## Guardrails (enforced on-chain)
+
 | Control | How |
 |---|---|
-| Bills only | The owner lists each bill (`addBill`: payee, amount, first due date, repeat every N days). The agent's `pay(billId, period)` takes no payee and no amount, so even a stolen agent key can only pay the owner's own bills |
-| Once per period | Each bill period settles at most once; a period can't be paid more than 3 days before it is due |
-| Scoped session keys | Each agent gets a per-payment cap, a rolling 24h cap and an expiry (`grantSession`) |
-| Instant revocation | `revokeSession(agent)`; `pause()` halts every agent payment |
-| Payee allowlist + blocklist | Bills to payees not on the allowlist need the owner; the blocklist always wins, even on owner approval |
-| Human approval | Bills outside the agent's limits are proposed (`propose`, with a note) and wait for `approve` or `reject` |
+| Bills only | `pay(billId, period)` takes no payee and no amount, so even a stolen agent key can only pay the owner's own bills |
+| Once per period | Each bill period settles at most once, and never more than 3 days early |
+| Scoped session | The agent gets a per-payment cap, a rolling 24h cap and an expiry (`grantSession`) |
+| Instant stop | `revokeSession(agent)`; `pause()` halts every agent payment |
+| Payees | New payees need the owner; the blocklist always wins, even on owner approval |
+| Human approval | Bills outside the limits are proposed with a note and wait for `approve` or `reject` |
 | Cash buffer | No agent payment may drop the vault below `cashBuffer` |
 | Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
-| Receipts and audit trail | `BillPaid` for every settlement, `PaymentProposed` / `PaymentRejected`, and `PolicyChanged` with old and new values |
-| Ownership | `Ownable2Step`; the owner can always withdraw |
+| Receipts | `BillPaid`, `PaymentProposed`, `PaymentRejected`, and `PolicyChanged` with old and new values |
 
-Attack suite: `contracts/test/attacks.test.js` signs with the agent's key and tries 20 ways to move money or change rules; all are refused.
+20 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
+
+## Check it
+
+You need Node.js 22.
+
+```bash
+npm run verify
+```
+
+One line per check, ending `VERIFY PASSED: 5 passed, 0 failed`: 39 contract tests (including the attack suite), the agent's typecheck and 22 tests, the invoice reader's tests, and the web build.
+
+### See the agent work, locally
+
+```bash
+cd contracts && npm install --legacy-peer-deps && npx hardhat node
+```
+
+In a second terminal:
+
+```bash
+cd contracts && npx hardhat run scripts/local-demo.js --network localhost
+```
+
+```bash
+cd agent && npm install && SLUICE_LOCAL=1 AEVUM_RPC_URL=http://127.0.0.1:8545 SLUICE_VAULTS=<vault printed above> AGENT_PRIVATE_KEY=<Hardhat account #1 key> npm run agent
+```
+
+You see Northwind paid alone, Atlas proposed (over the cap), Figma proposed (new payee), the "new bank details" bill refused (blocklisted), and December left for later. Run it again: nothing new happens, because the vault remembers.
+
+### The dashboard
+
+```bash
+cd web && npm install && npm run dev
+```
+
+Demo data by default; add `?vault=0x…` to the address (`#/app/overview?vault=0x…`) to read a live vault on Aevum. See [web/README.md](web/README.md).
 
 ## Network
+
 | | |
 |---|---|
 | Chain | QDay Aevum Testnet, chain ID `44005` |
@@ -33,32 +91,45 @@ Attack suite: `contracts/test/attacks.test.js` signs with the agent's key and tr
 | Explorer | https://explorer-test.qday.info/ |
 | tUSD8 | `0x456569838f1d43009A91ebA4263147Afd7233483` (6 decimals: `1 tUSD8 = 1_000_000`) |
 | Faucet | https://faucet.qday.info/en |
-
-## Run it
-```bash
-cd contracts
-npm install --legacy-peer-deps
-npm test
-```
+| Vault | Deployment pending |
 
 Deploy (needs tQDAY for gas):
+
 ```bash
-cp .env.example .env   # fill DEPLOYER_PRIVATE_KEY; .env is gitignored
+cd contracts && cp .env.example .env
+```
+
+Fill in `DEPLOYER_PRIVATE_KEY` and `OWNER_ADDRESS` (`.env` is gitignored), then:
+
+```bash
 npm run deploy
 ```
 
-## Repo layout
-- `contracts/` – `SluiceVault.sol`, tests, deploy script (Hardhat)
-- `agent/` – the agent: observe, forecast, decide, Claude review (stricter only), act, learn. Runs every 15 minutes on GitHub Actions. See `agent/README.md`
-- `web/` – landing page and the owner's dashboard (Vite, React, viem). Reads the vault live from Aevum; the owner signs in MetaMask. `web/api/read-invoice.ts` drafts a bill from an invoice with Claude and stores nothing. See `web/README.md`
+## Repository
 
-## Roadmap
-- Confirmation of Payee via ERC-8004 (if a registry is available on Aevum)
+| Folder | What |
+|---|---|
+| `contracts/` | `SluiceVault.sol`, tests and attack suite, deploy and local demo scripts (Hardhat) |
+| `agent/` | The agent: observe, forecast, decide, review, act, learn. See [agent/README.md](agent/README.md) |
+| `web/` | Landing page, owner dashboard, and the invoice reader function. See [web/README.md](web/README.md) |
+| `docs/` | [Security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md) |
+| `.github/workflows/` | `ci.yml` runs every check on each push; `agent.yml` runs the agent every 15 minutes |
+
+## Known limits
+
+- The Claude review fails open: if the model is unreachable, the agent follows its rules, and the vault's limits still apply.
+- The dashboard manages one agent session per vault (the latest granted).
+- At most 32 agent payments per vault in 24 hours; beyond that, payments wait for the next window or the owner.
+- Testnet tokens have no value. Nothing here has moved real money.
+
+Roadmap to mainnet: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
 
 ## Dependencies
-- viem (MIT), @anthropic-ai/sdk (MIT), tsx (MIT) for the agent
-- OpenZeppelin Contracts 5.1 (MIT)
-- Hardhat (MIT), ethers v6 (MIT), chai (MIT)
+
+- OpenZeppelin Contracts 5.1, Hardhat, ethers v6, chai (MIT) for the contract
+- viem, @anthropic-ai/sdk, tsx (MIT) for the agent
+- React 18, Vite 5, viem (MIT) for the dashboard; Fraunces, Hanken Grotesk and Geist Mono from Google Fonts (OFL)
 
 ## License
-MIT
+
+MIT, see [LICENSE](LICENSE).

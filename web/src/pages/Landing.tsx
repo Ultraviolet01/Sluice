@@ -12,11 +12,12 @@ import "./landing.css";
 const REPO = "https://github.com/ultraviolet01/sluice";
 
 const KEY_PERMS = [
-  ["pay", "Allowed", "ok"],
+  ["pay(bill, period)", "Allowed", "ok"],
+  ["propose(bill, period)", "Allowed", "ok"],
+  ["addBill", "Owner only", "owner"],
   ["approve", "Owner only", "owner"],
   ["grantSession", "Owner only", "owner"],
-  ["setPayeeAllowed", "Owner only", "owner"],
-  ["withdraw", "Never", "never"],
+    ["withdraw", "Never", "never"],
 ] as const;
 
 export default function Landing() {
@@ -41,7 +42,7 @@ export default function Landing() {
       <header className="ld-hero">
         <h1 className="display">Runs your treasury.<br />Never past the line</h1>
         <div className="ld-intro">
-          <p>Sluice is an AI agent that pays invoices, moves funds between your vaults and forecasts shortfalls. Your limits live in a contract on QDay Aevum, so it can’t spend past them.</p>
+          <p>Sluice is an AI agent that pays your company’s bills in tUSD8 and forecasts shortfalls. It can only pay bills you listed, inside limits that live in a contract on QDay Aevum, so it can’t spend past them.</p>
           <span className="ld-spacer" />
           <div className="ld-ctas">
             <a className="ld-pill" href="#/app/overview">Open app</a>
@@ -79,8 +80,8 @@ export default function Landing() {
       <section className="ld-how" id="how">
         <h2 className="display">How it works</h2>
         <div className="ld-steps">
-          <div><p className="display ld-num">1</p><p className="ld-step-t">Paint the line</p><p className="ld-step-b">Set caps, payees and minimums in your own SluiceVault contract on Aevum. Only your key can change them.</p></div>
-          <div><p className="display ld-num">2</p><p className="ld-step-t">Sluice keeps watch</p><p className="ld-step-b">It forecasts every vault and pays invoices or moves tUSD8 between your vaults when something runs short.</p></div>
+          <div><p className="display ld-num">1</p><p className="ld-step-t">Paint the line</p><p className="ld-step-b">List your bills and set caps, payees and a cash buffer in your own SluiceVault contract on Aevum. Only your key can change them.</p></div>
+          <div><p className="display ld-num">2</p><p className="ld-step-t">Sluice keeps watch</p><p className="ld-step-b">Every 15 minutes it forecasts the next 14 days, pays the bills that fit your limits, and holds back anything that looks wrong.</p></div>
           <div><p className="display ld-num">3</p><p className="ld-step-t">You sign the big ones</p><p className="ld-step-b">Anything over your line waits for your approval, with Sluice’s reasons attached.</p></div>
         </div>
       </section>
@@ -89,7 +90,7 @@ export default function Landing() {
         <div className="ld-sec-row">
           <div className="ld-sec-copy">
             <h2 className="display">It can’t spend<br />past the line</h2>
-            <p>Not “won’t”. Can’t. Sluice signs with a session key that can only call pay() on your vault, inside a per-payment cap, a daily budget and an expiry. The vault checks every payment against your line before any money moves.</p>
+            <p>Not “won’t”. Can’t. Sluice’s session key can only settle a bill you listed, by its number: no payee and no amount of its own, inside a per-payment cap, a rolling 24-hour budget and an expiry. The vault checks every payment against your line before any money moves.</p>
           </div>
           <div className="ld-perms">
             <p className="ld-perms-h">What Sluice’s key can call on your vault</p>
