@@ -26,7 +26,13 @@ export interface Verdict {
   by: "claude" | "sluice";
 }
 
-export const MODEL = "claude-opus-5-5";
+/**
+ * Claude Haiku 5.5: the cheapest current model ($0.10 / $0.50 per million tokens),
+ * well able to spot lookalike names, odd amounts and pressure in one short bill.
+ * Medium effort (its default) keeps some reasoning for precision; a review is
+ * about 600 input tokens, so each costs a small fraction of a cent.
+ */
+export const MODEL = "claude-haiku-5-5";
 
 const SYSTEM = `You review one outgoing stablecoin payment for a company's treasury agent, just before it is paid without a human.
 The payment already passed the owner's on-chain limits. Look for what limits cannot catch:
@@ -115,16 +121,16 @@ export function makeReviewer(apiKey: string | undefined, timeoutMs = 30_000): Re
       }
       if (!client) return null;
       try {
-        const msg = await client.beta.messages.create({
+        // Thinking counts toward max_tokens, so leave room for it before the short JSON answer.
+        const msg = await client.messages.create({
           model: MODEL,
-          max_tokens: 2000,
-          betas: ["server-side-fallback-2026-07-01"],
-          fallbacks: "default",
-          output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
+          max_tokens: 3000,
+          output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
           system: SYSTEM,
           messages: [{ role: "user", content: buildPrompt(x) }],
         });
-        if (msg.stop_reason === "refusal") return null;
+        // A refusal (Haiku has no server-side fallback) or a cut-off answer: keep the rules' decision.
+        if (msg.stop_reason === "refusal" || msg.stop_reason === "max_tokens") return null;
         const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
         return parseVerdict(text);
       } catch {
