@@ -255,7 +255,7 @@ Events, all with the owner's reason where one applies: `BillAdded`, `BillCancell
 | `bot/` | The Telegram bot (Railway): alerts to each founder, `/balance`, `/pending`, and pause / block / reject as the vault's guardian. See [bot/README.md](bot/README.md) |
 | `agent/` | The agent: observe, forecast, decide, review, act, learn. See [agent/README.md](agent/README.md) |
 | `web/` | Landing page, owner dashboard, and the invoice reader function. See [web/README.md](web/README.md) |
-| `docs/` | [Proof on Aevum](docs/VERIFIED.md), [security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md), [backlog](docs/BACKLOG.md) |
+| `docs/` | [Proof on Aevum](docs/VERIFIED.md), [security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [backlog](docs/BACKLOG.md) |
 | `.github/workflows/` | `ci.yml` runs every check on each push; `agent.yml` runs one agent round by hand (the 15-minute schedule runs on Railway) |
 
 ## Known limits
@@ -286,7 +286,7 @@ Details: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
 
 ## Demo video
 
-Recording in progress; the script is in [docs/DEMO.md](docs/DEMO.md). The link will be added here, viewable without a login.
+Recording in progress. The link will be added here, viewable without a login.
 
 ## Team
 
