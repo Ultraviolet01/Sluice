@@ -40,7 +40,7 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 
 ## Roadmap to mainnet
 
-See [JUDGING.md](JUDGING.md#roadmap-to-mainnet): per-payee caps, Confirmation of Payee through an ERC-8004 registry, a Safe multisig owner, gas in tUSD8 through an ERC-4337 paymaster, an audit.
+See [JUDGING.md](JUDGING.md#roadmap-to-mainnet): per-payee caps, paying payees on another chain through the QDay Bridge, Confirmation of Payee through an ERC-8004 registry, a Safe multisig owner, gas in tUSD8 through an ERC-4337 paymaster, an audit.
 
 ## Not planned
 
