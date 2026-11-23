@@ -39,13 +39,13 @@ async function main() {
   const payees = Object.fromEntries(names.map((n) => [n, ethers.Wallet.createRandom().address]));
 
   console.log("Creating the company through the factory");
-  const created = await step("createVault Kora Supply Group", factory.createVault("Kora Supply Group", usd(5), usd(5)));
+  const created = await step("createVault Kora Supply Group", factory.createVault("Kora Supply Group", usd(1), usd(5)));
   const ev = created.logs.map((l) => { try { return factory.interface.parseLog(l); } catch { return null; } }).find((e) => e?.name === "VaultCreated");
   const vaultAddr = ev.args.vault;
   const vault = await ethers.getContractAt("SluiceVault", vaultAddr);
 
-  // Faucet-sized amounts: the whole demo fits in about 20 tUSD8.
-  const fund = usd(process.env.FUND ?? 20);
+  // Faucet-sized amounts: the whole demo fits in 5 tUSD8 (1 tUSD8 cash buffer).
+  const fund = usd(process.env.FUND ?? 5);
   if (isLocal()) await step("mint test tUSD8", token.mint(vaultAddr, fund));
   else {
     const bal = await token.balanceOf(owner.address);
