@@ -7,11 +7,11 @@ The landing page and the owner's dashboard. Vite, React and viem; no backend exc
 | Page | Reads | Owner can sign |
 |---|---|---|
 | Overview | Balance, 14-day forecast against the cash buffer, what waits for you, the agent's recent decisions, upcoming bills, active rules | List a bill |
-| Approvals | Every proposal the agent filed, why the vault sent it to you, and the policy checks | `approve`, `reject` |
+| Approvals | Every proposal the agent filed, why the vault sent it to you, and the policy checks | `approve`, `reject`, and `releaseBill` to reopen a bill rejected by mistake |
 | Activity | Every receipt and rule change from the vault's events, with transaction links; CSV export | |
 | Rules | Caps, threshold, buffer, payees, bills | `setApprovalThreshold`, `setCashBuffer`, `setPayeeAllowed`, `setPayeeBlocked`, `addBill`, `cancelBill`, `pause` / `unpause` |
-| Wallets | The vault, deposit address, each bill over the next 14 days with the balance after it | `withdraw` |
-| Settings | The agent's session | `grantSession`, `revokeSession` |
+| Wallets | The vault, deposit address, each bill over the next 14 days with the balance after it, and the agent's gas left | `withdraw`, deposit |
+| Settings | The agent's session and its gas left; the vault's owner and any pending offer | `grantSession`, `revokeSession`, `transferOwnership` (offer or cancel); the offered owner gets an Accept banner (`acceptOwnership`) |
 
 Every action is simulated first (a refusal shows the vault's reason and costs nothing), then signed in the owner's wallet. Anyone can view a vault; only its owner can sign.
 

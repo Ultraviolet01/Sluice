@@ -6,6 +6,8 @@ import { NETWORK } from "../data.ts";
 import { fmt, toUnits } from "../model.ts";
 import { useApp } from "../state.tsx";
 import "./settings.css";
+import { fmtGas, gasLow } from "../gas.ts";
+import { OwnerCard } from "./Ownership.tsx";
 
 export default function Settings() {
   const { model: m, act, busy } = useApp();
@@ -52,6 +54,15 @@ export default function Settings() {
               <p className="faint xs">{fmt(s.spent)} of {fmt(s.dailyCap)} tUSD8, {fmt(s.perPaymentCap)} per payment</p>
             </div>
           )}
+          {s && m.agentGas !== null && (
+            <div className={`st-gas${gasLow(m.agentGas) ? " low" : ""}`}>
+              <div className="grow">
+                <p className="t14">Gas left: {fmtGas(m.agentGas)} tQDAY</p>
+                <p className="xs">{gasLow(m.agentGas) ? "Low. The agent pays for its own transactions; without gas it stops paying bills. Send tQDAY to its address." : "The agent pays for its own transactions. You get a Telegram alert if this runs low."}</p>
+              </div>
+              <button className="btn btn-secondary ac-sm" onClick={() => { navigator.clipboard?.writeText(s.agent).catch(() => {}); }}>Copy agent address</button>
+            </div>
+          )}
           <div className="st-grant">
             <p className="t14">{s ? "Change or rotate the session" : "Grant a session"}</p>
             <label className="form-row"><span>Agent address{HOSTED_AGENT && f.agent.toLowerCase() === HOSTED_AGENT.toLowerCase() ? " (Sluice's hosted agent)" : ""}</span><input className="mono" placeholder={s?.agent ?? "0x…"} value={f.agent} onChange={(e) => setF({ ...f, agent: e.target.value })} /></label>
@@ -73,6 +84,8 @@ export default function Settings() {
           <p className="muted small" style={{ marginTop: 10 }}>It needs a little tQDAY for gas at its own address.</p>
         </section>
       </div>
+
+      <OwnerCard />
 
       <section className="card">
         <p className="card-title" style={{ paddingBottom: 12 }}>Vault details</p>

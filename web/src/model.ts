@@ -3,7 +3,7 @@
 
 import { decodeEventLog, hexToString, type Address, type Log } from "viem";
 import { REASON_TEXT, Reason, forecast as runForecast, upcoming as runUpcoming, type Bill } from "../../agent/src/brain.ts";
-import { VAULT_ABI, companyName, publicClient } from "./chain.ts";
+import { VAULT_ABI, companyName, gasBalance, publicClient } from "./chain.ts";
 import type { Kind } from "./data.ts";
 
 export interface Session {
@@ -25,7 +25,7 @@ export interface ApprovalRow {
   note: string;
   why: string;
   createdAt: number;
-  status: "waiting" | "approved" | "rejected";
+  status: "waiting" | "approved" | "rejected" | "released";
   tx?: string;
 }
 
@@ -56,7 +56,11 @@ export interface Model {
   /** The stablecoin the vault holds (tUSD8 on Aevum). */
   token: Address;
   owner: Address | null;
+  /** Offered new owner who has not accepted yet (two-step transfer), or null. */
+  pendingOwner: Address | null;
   paused: boolean;
+  /** The agent's own gas (tQDAY, 18 decimals); it pays for every transaction it sends. */
+  agentGas: bigint | null;
   balance: bigint;
   cashBuffer: bigint;
   threshold: bigint;
@@ -77,9 +81,10 @@ const why = (reason: unknown, fallback: string) => (typeof reason === "string" &
 export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   const read = <T,>(functionName: string, args: unknown[] = []) =>
     publicClient.readContract({ address: vault, abi: VAULT_ABI, functionName: functionName as never, args: args as never }) as Promise<T>;
-  const [token, owner, paused, balance, cashBuffer, threshold, count, block] = await Promise.all([
+  const [token, owner, pendingRaw, paused, balance, cashBuffer, threshold, count, block] = await Promise.all([
     read<Address>("token"),
-    read<Address>("owner"), read<boolean>("paused"), read<bigint>("balance"), read<bigint>("cashBuffer"),
+    read<Address>("owner"),
+    read<Address>("pendingOwner"), read<boolean>("paused"), read<bigint>("balance"), read<bigint>("cashBuffer"),
     read<bigint>("approvalThreshold"), read<bigint>("billCount"), publicClient.getBlock(),
   ]);
   const now = Number(block.timestamp);
@@ -136,7 +141,8 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
       note: String(e.args.note ?? ""),
       why: REASON_TEXT[Number(e.args.reason) as Reason],
       createdAt: e.at,
-      status: st[0] === STATUS.Paid ? "approved" : st[0] === STATUS.Rejected ? "rejected" : st[0] === STATUS.Pending ? "waiting" : "rejected",
+      // None after a proposal means the owner released a rejected period: it can be proposed again.
+      status: st[0] === STATUS.Paid ? "approved" : st[0] === STATUS.Rejected ? "rejected" : st[0] === STATUS.Pending ? "waiting" : "released",
       tx: e.tx,
     });
   }
@@ -173,6 +179,14 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
       activity.push({ at: e.at, what: `Cancelled bill: ${label(Number(a.billId))}`, amount: null, sign: "none", kind: "neutral", outcome: "Signed by you", rule: why(a.reason, "cancelBill"), tx: e.tx, type: "rules" });
     } else if (e.name === "Paused" || e.name === "Unpaused") {
       activity.push({ at: e.at, what: e.name === "Paused" ? "All payments paused" : "Payments resumed", amount: null, sign: "none", kind: e.name === "Paused" ? "blocked" : "settled", outcome: "Signed by you", rule: e.name === "Paused" ? "pause" : "unpause", tx: e.tx, type: "rules" });
+    } else if (e.name === "BillReleased") {
+      activity.push({ at: e.at, what: `Released ${label(Number(a.billId))}, payment ${Number(a.period) + 1}`, amount: null, sign: "none", kind: "neutral", outcome: "Signed by you", rule: "Can be paid again", tx: e.tx, type: "rules" });
+    } else if (e.name === "OwnershipTransferStarted") {
+      const to = String(a.newOwner);
+      const cancelled = to === "0x0000000000000000000000000000000000000000";
+      activity.push({ at: e.at, what: cancelled ? "Ownership offer cancelled" : `Ownership offered to ${to.slice(0, 8)}…`, amount: null, sign: "none", kind: "approval", outcome: "Signed by you", rule: cancelled ? "transferOwnership(0x0)" : "Waits for them to accept", tx: e.tx, type: "rules" });
+    } else if (e.name === "OwnershipTransferred" && String(a.previousOwner) !== "0x0000000000000000000000000000000000000000") {
+      activity.push({ at: e.at, what: `Ownership accepted by ${String(a.newOwner).slice(0, 8)}…`, amount: null, sign: "none", kind: "settled", outcome: "New owner", rule: "acceptOwnership", tx: e.tx, type: "rules" });
     } else if (e.name === "Withdrawn") {
       activity.push({ at: e.at, what: `Withdrew to ${String(a.to).slice(0, 8)}…`, amount: a.amount as bigint, sign: "out", kind: "neutral", outcome: "Withdrawn", rule: "withdraw", tx: e.tx, type: "rules" });
     }
@@ -214,7 +228,9 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   return {
     live: true,
     name: (await companyName(vault)) || import.meta.env.VITE_COMPANY_NAME || "Your company",
-    vault, token, owner, paused, balance, cashBuffer, threshold, session, bills, upcoming, forecast,
+    vault, token, owner, paused,
+    pendingOwner: pendingRaw === "0x0000000000000000000000000000000000000000" ? null : pendingRaw,
+    agentGas: session ? await gasBalance(session.agent).catch(() => null) : null, balance, cashBuffer, threshold, session, bills, upcoming, forecast,
     approvals: [...latest.values()].sort((a, b) => b.createdAt - a.createdAt),
     activity,
     payees: [...payees.values()],

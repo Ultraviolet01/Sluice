@@ -13,6 +13,7 @@
 //   TELEGRAM_BOT_TOKEN   optional, with TELEGRAM_CHAT_ID: alerts when something needs the owner
 //   SLUICE_APP_URL       optional, the dashboard's address, linked from alerts
 //   SLUICE_ALERT_STATE   optional, file remembering alerts already sent (default .sluice-alerts.json)
+//   SLUICE_MIN_GAS       optional, alert when the agent's tQDAY falls below this (default 0.2)
 // Flags: --dry-run decides everything and signs nothing.
 
 import { appendFileSync } from "node:fs";
@@ -22,7 +23,7 @@ import { aevumTestnet, viemChain } from "./chain.ts";
 import { runVault, type Event } from "./loop.ts";
 import { makeReviewer } from "./review.ts";
 import { explain } from "./explain.ts";
-import { format, fresh, loadSent, saveSent, send, type Alert } from "./notify.ts";
+import { LOW_GAS, format, fresh, gasAlert, loadSent, saveSent, send, type Alert } from "./notify.ts";
 
 const EXPLORER = process.env.SLUICE_LOCAL === "1" ? "" : "https://explorer-test.qday.info";
 
@@ -67,6 +68,20 @@ async function main() {
 
   const summary: string[] = [];
   let failed = false;
+
+  // The agent pays its own gas: warn the owner before it runs dry, not after bills stop.
+  const minGas = process.env.SLUICE_MIN_GAS ? BigInt(Math.round(Number(process.env.SLUICE_MIN_GAS) * 1e6)) * 10n ** 12n : LOW_GAS;
+  const gasLeft = await chain.gas().catch(() => null);
+  if (gasLeft !== null) {
+    console.log(`Gas left: ${(Number(gasLeft / 10n ** 14n) / 10_000).toFixed(4)} tQDAY`);
+    const low = gasAlert(chain.agent, gasLeft, minGas);
+    if (low) {
+      console.log(`[alert] ${low.text}`);
+      const g = fresh([low], sent);
+      sent = g.sent;
+      if (g.todo.length && tg && !dryRun && (await send(tg, format("agent", g.todo)))) sent[low.key] = Date.now();
+    }
+  }
   for (const vault of vaults as Address[]) {
     if (Date.now() > roundEnds) {
       console.log(`\n[round] time is up; ${vault} and later vaults wait for the next round`);

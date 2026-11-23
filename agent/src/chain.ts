@@ -71,6 +71,8 @@ export const FACTORY_ABI = parseAbi([
 
 export interface Chain {
   agent: Address;
+  /** The agent's own gas balance (tQDAY, 18 decimals): it pays every transaction it sends. */
+  gas(): Promise<bigint>;
   /** Vaults from the factory whose current agent is this key, with a live session. */
   discover(factory: Address): Promise<Address[]>;
   now(): Promise<number>;
@@ -101,6 +103,7 @@ export function viemChain(opts: { rpcUrl: string; privateKey: Hex; fromBlock?: b
 
   return {
     agent: account.address,
+    gas: () => pub.getBalance({ address: account.address }),
     async discover(factory) {
       const n = Number(await pub.readContract({ address: factory, abi: FACTORY_ABI, functionName: "vaultCount" }));
       const now = Math.floor(Date.now() / 1000);

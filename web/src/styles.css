@@ -261,3 +261,12 @@ button { font: inherit; cursor: pointer; }
 .cs-sep { height: 1px; background: var(--border-default); margin: 6px 4px; }
 .cs-note { padding: 4px 10px; color: var(--text-tertiary); }
 @media (max-width: 900px) { .cs-menu { width: 100%; } }
+.st-gas { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: var(--status-success-tint); color: var(--text-secondary); }
+.st-gas.low { background: var(--status-critical-tint); color: var(--status-critical); }
+.st-gas .grow { display: flex; flex-direction: column; gap: 3px; }
+.own { display: flex; flex-direction: column; gap: 4px; }
+.own-pending { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 12px; border-radius: 10px; background: var(--accent-brass-tint); }
+.own-pending .grow { display: flex; flex-direction: column; gap: 3px; }
+.own-form { display: flex; flex-direction: column; }
+.own-banner { display: flex; align-items: center; gap: 12px; background: var(--accent-brass-tint); color: var(--text-primary); }
+.own-banner .grow { flex: 1; }

@@ -71,3 +71,16 @@ export async function send(tg: Telegram, text: string, fetcher: typeof fetch = f
     return false;
   }
 }
+
+/** Below this the agent may not afford a round's transactions (tQDAY, 18 decimals). */
+export const LOW_GAS = 200_000_000_000_000_000n; // 0.2 tQDAY
+
+/** An alert when the agent is running out of gas, once per day while it stays low. */
+export function gasAlert(agent: string, balance: bigint, min = LOW_GAS, day = new Date().toISOString().slice(0, 10)): Alert | null {
+  if (balance >= min) return null;
+  const shown = (Number(balance / 10n ** 14n) / 10_000).toFixed(4);
+  const text = balance === 0n
+    ? `The agent ${agent} has no tQDAY left for gas, so it cannot pay or propose anything. Send it some from the faucet or your wallet.`
+    : `The agent ${agent} is low on gas: ${shown} tQDAY left. Top it up soon, or it will stop paying bills.`;
+  return { key: `lowgas:${agent}:${day}`, text };
+}

@@ -42,6 +42,7 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 | Once per period | Each bill period settles at most once, and never more than 3 days early |
 | Scoped session | The agent gets a per-payment cap, a rolling 24h cap and an expiry (`grantSession`) |
 | Instant stop | `revokeSession(agent)`; `pause()` halts every agent payment; granting a new agent revokes the old key |
+| Ownership | Two-step hand-over to a new wallet or a Safe: the owner offers, the new owner accepts, and the owner can cancel before then |
 | Payees | New payees need the owner; the blocklist always wins, even on owner approval |
 | Human approval | Bills outside the limits are proposed with a note and wait for `approve` or `reject` |
 | Cash buffer | No agent payment may drop the vault below `cashBuffer` |

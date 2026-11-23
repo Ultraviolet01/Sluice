@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { format, fresh, loadSent, saveSent, send } from "./notify.ts";
+import { LOW_GAS, format, fresh, gasAlert, loadSent, saveSent, send } from "./notify.ts";
 import { template } from "./explain.ts";
 
 test("each situation is alerted once, and again after a week", () => {
@@ -50,4 +50,13 @@ test("the template explains without a model and fits the vault's note limit", ()
   assert.match(t, /under your 10,000.00 tUSD8 buffer/);
   assert.match(t, /critical/);
   assert.ok(t.length <= 270);
+});
+
+test("low gas: alert below the line, once per day, and say plainly when it is empty", () => {
+  assert.equal(gasAlert("0xA", LOW_GAS), null);
+  const low = gasAlert("0xA", LOW_GAS / 2n, LOW_GAS, "2026-12-01");
+  assert.ok(low);
+  assert.match(low.text, /0\.1000 tQDAY left/);
+  assert.equal(low.key, "lowgas:0xA:2026-12-01");
+  assert.match(gasAlert("0xA", 0n)!.text, /no tQDAY left/);
 });

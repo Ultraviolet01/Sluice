@@ -11,7 +11,10 @@ import flowArrow from "../assets/icons/flow-arrow.svg";
 import "./approvals.css";
 
 const tag = (a: ApprovalRow) =>
-  a.status === "approved" ? { kind: "settled" as const, text: "Approved" } : a.status === "rejected" ? { kind: "blocked" as const, text: "Rejected" } : { kind: "approval" as const, text: "Needs approval" };
+  a.status === "approved" ? { kind: "settled" as const, text: "Approved" }
+  : a.status === "rejected" ? { kind: "blocked" as const, text: "Rejected" }
+  : a.status === "released" ? { kind: "neutral" as const, text: "Released" }
+  : { kind: "approval" as const, text: "Needs approval" };
 
 /** The agent's note, minus a repeat of the vault's own reason. */
 function noteText(a: ApprovalRow): string {
@@ -56,6 +59,12 @@ export default function Approvals() {
         activity: [{ at: Date.now() / 1000, what: `${d === "approved" ? "Paid" : "Rejected"} ${a.label}`, amount: d === "approved" ? a.amount : null, sign: d === "approved" ? "out" : "none", kind: d === "approved" ? "settled" : "blocked", outcome: d === "approved" ? "Approved" : "Rejected", rule: d === "approved" ? "Approved by you" : "Rejected by you", tx: "", type: d === "approved" ? "approved" : "blocked" }, ...mm.activity],
       }),
     );
+
+  const release = (a: ApprovalRow) =>
+    act(`Released ${a.label}`, { fn: "releaseBill", args: [BigInt(a.billId), a.period] }, (mm) => ({
+      ...mm,
+      approvals: mm.approvals.map((x) => (x.key === a.key ? { ...x, status: "released" } : x)),
+    }));
 
   const Item = ({ a }: { a: ApprovalRow }) => {
     const t = tag(a);
@@ -127,6 +136,16 @@ export default function Approvals() {
               ))}
             </div>
 
+            {current.status === "rejected" && (
+              <div className="ap-release">
+                <div className="grow">
+                  <p className="t14">Rejected by mistake?</p>
+                  <p className="muted xs">Releasing reopens this payment: Sluice can propose it again on its next round, and you decide again. Nothing is paid by releasing.</p>
+                </div>
+                <button className="btn btn-secondary" disabled={!!busy} onClick={() => release(current)}>Release</button>
+              </div>
+            )}
+            {current.status === "released" && <p className="muted small">Released: Sluice will propose this payment again on its next round.</p>}
             <div className="ap-actions">
               <div className="grow">
                 <p className="muted xs">Signs vault.approve({current.billId}, {current.period})</p>

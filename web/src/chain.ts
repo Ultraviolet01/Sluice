@@ -28,6 +28,13 @@ export const VAULT_ABI = parseAbi([
   "function settlements(uint256, uint32) view returns (uint8 status, address agent, uint64 createdAt, uint8 reason, string note)",
   "function isAllowedPayee(address) view returns (bool)",
   "function agent() view returns (address)",
+  "function pendingOwner() view returns (address)",
+  "function releaseBill(uint256 billId, uint32 period)",
+  "function transferOwnership(address newOwner)",
+  "function acceptOwnership()",
+  "event BillReleased(uint256 indexed billId, uint32 indexed period)",
+  "event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner)",
+  "event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)",
   "function token() view returns (address)",
   "function isBlockedPayee(address) view returns (bool)",
   // owner actions
@@ -185,7 +192,23 @@ export type OwnerCall =
   | { fn: "setCashBuffer" | "setApprovalThreshold"; args: [bigint, string] }
   | { fn: "grantSession"; args: [Address, bigint, bigint, bigint, string] }
   | { fn: "revokeSession"; args: [Address, string] }
-  | { fn: "withdraw"; args: [Address, bigint] };
+  | { fn: "withdraw"; args: [Address, bigint] }
+  | { fn: "releaseBill"; args: [bigint, number] }
+  | { fn: "transferOwnership"; args: [Address] };
+
+/** The offered new owner accepts the vault (Ownable2Step's second step). Signed by them, not the owner. */
+export async function acceptOwnership(vault: Address, account: Address): Promise<Hex> {
+  const provider = eth();
+  if (!provider) throw new Error("No browser wallet found.");
+  const wallet = createWalletClient({ chain: aevum, account, transport: custom(provider) });
+  const { request } = await publicClient.simulateContract({ address: vault, abi: VAULT_ABI, functionName: "acceptOwnership", account });
+  const hash = await wallet.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") throw new Error("Transaction reverted");
+  return hash;
+}
+
+export const gasBalance = (who: Address) => publicClient.getBalance({ address: who });
 
 /** Simulates (so a refusal shows its reason and costs nothing), signs, and waits for the receipt. */
 export async function ownerSend(vault: Address, account: Address, call: OwnerCall): Promise<Hex> {
