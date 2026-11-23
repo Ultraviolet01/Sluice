@@ -26,6 +26,9 @@ function rng(seed) {
 
 describe(`SluiceVault under random operations (seed ${SEED})`, function () {
   this.timeout(300_000);
+  // One quiet run is fine (every random operation can be refused); runs that never did anything would prove nothing.
+  let worked = 0;
+  after(() => expect(worked, "no agent operation succeeded in any run").to.be.greaterThan(0));
   for (let run = 0; run < RUNS; run++) {
     it(`run ${run}: never pays outside a listed bill, twice, past the 24h cap, or below the buffer`, async () => {
       const r = rng(SEED * 1009 + run);
@@ -105,8 +108,7 @@ describe(`SluiceVault under random operations (seed ${SEED})`, function () {
       }
 
       if (process.env.FUZZ_DEBUG) console.log(`      run ${run}: ${bills.length} bills, ${agentPays.length} agent payments, ${proposed.length} proposals, ${settled.size} periods settled`);
-      // A run where nothing ever got paid would prove nothing.
-      expect(agentPays.length + proposed.length, "no agent operation succeeded in this run").to.be.greaterThan(0);
+      worked += agentPays.length + proposed.length;
       // Every token that left the vault went to a payee of a listed bill.
       const logs = await token.queryFilter(token.filters.Transfer(v));
       for (const l of logs) expect(payeeSet.has(l.args.to.toLowerCase()), "money went to a non-bill payee").to.equal(true);
