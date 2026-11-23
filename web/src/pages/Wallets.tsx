@@ -6,7 +6,6 @@ import { dayLabel, fmt, toUnits } from "../model.ts";
 import { useApp } from "../state.tsx";
 import "./wallets.css";
 import { DepositPanel } from "./Panels.tsx";
-import { fmtGas, gasLow } from "../gas.ts";
 
 function Withdraw({ onClose }: { onClose: () => void }) {
   const { model: m, act, account } = useApp();
@@ -64,13 +63,7 @@ export default function Wallets() {
         <div><p className="muted small">In the vault</p><p><span className="display wl-big">{fmt(m.balance)}</span> <span className="unit">tUSD8</span></p><p className="faint xs">On Aevum Testnet</p></div>
         <div><p className="muted small">Above the buffer</p><p><span className="display wl-big">{fmt(above > 0n ? above : 0n)}</span> <span className="unit">tUSD8</span></p><p className="faint xs">{fmt(m.cashBuffer)} held back</p></div>
         <div><p className="muted small">Shortfalls ahead</p><p><span className="display wl-big">{short ? 1 : 0}</span></p><p className={short ? "brass xs" : "faint xs"}>{short ? `Below the buffer on ${dayLabel(short.day)}` : "None in 14 days"}</p></div>
-        <div>
-          <p className="muted small">Gas left for Sluice</p>
-          <p><span className="display wl-big" style={gasLow(m.agentGas) ? { color: "var(--status-critical)" } : undefined}>{m.agentGas === null ? "—" : fmtGas(m.agentGas)}</span> <span className="unit">tQDAY</span></p>
-          <p className={gasLow(m.agentGas) ? "xs" : "faint xs"} style={gasLow(m.agentGas) ? { color: "var(--status-critical)" } : undefined}>
-            {m.agentGas === null ? "No agent yet" : gasLow(m.agentGas) ? "Low: top it up, or bills stop" : "Pays for the agent's transactions"}
-          </p>
-        </div>
+        <div><p className="muted small">Agent budget left</p><p><span className="display wl-big">{fmt(m.session ? m.session.dailyCap - m.session.spent : 0n)}</span> <span className="unit">tUSD8</span></p><p className="faint xs">Rolling 24 hours</p></div>
       </section>
 
       <div className="wl-layout">

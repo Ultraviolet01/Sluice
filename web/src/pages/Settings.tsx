@@ -6,7 +6,6 @@ import { NETWORK } from "../data.ts";
 import { fmt, toUnits } from "../model.ts";
 import { useApp } from "../state.tsx";
 import "./settings.css";
-import { fmtGas, gasLow } from "../gas.ts";
 import { OwnerCard } from "./Ownership.tsx";
 
 export default function Settings() {
@@ -52,15 +51,6 @@ export default function Settings() {
               <p className="faint xs">Used in the last 24 hours</p>
               <div className="bar" style={{ margin: "6px 0" }}><div style={{ width: `${s.dailyCap > 0n ? Math.min(100, Number((s.spent * 100n) / s.dailyCap)) : 0}%`, background: "var(--status-success)" }} /></div>
               <p className="faint xs">{fmt(s.spent)} of {fmt(s.dailyCap)} tUSD8, {fmt(s.perPaymentCap)} per payment</p>
-            </div>
-          )}
-          {s && m.agentGas !== null && (
-            <div className={`st-gas${gasLow(m.agentGas) ? " low" : ""}`}>
-              <div className="grow">
-                <p className="t14">Gas left: {fmtGas(m.agentGas)} tQDAY</p>
-                <p className="xs">{gasLow(m.agentGas) ? "Low. The agent pays for its own transactions; without gas it stops paying bills. Send tQDAY to its address." : "The agent pays for its own transactions. You get a Telegram alert if this runs low."}</p>
-              </div>
-              <button className="btn btn-secondary ac-sm" onClick={() => { navigator.clipboard?.writeText(s.agent).catch(() => {}); }}>Copy agent address</button>
             </div>
           )}
           <div className="st-grant">

@@ -10,14 +10,16 @@ The landing page and the owner's dashboard. Vite, React and viem; no backend exc
 | Approvals | Every proposal the agent filed, why the vault sent it to you, and the policy checks | `approve`, `reject`, and `releaseBill` to reopen a bill rejected by mistake |
 | Activity | Every receipt and rule change from the vault's events, with transaction links; CSV export | |
 | Rules | Caps, threshold, buffer, payees, bills | `setApprovalThreshold`, `setCashBuffer`, `setPayeeAllowed`, `setPayeeBlocked`, `addBill`, `cancelBill`, `pause` / `unpause` |
-| Wallets | The vault, deposit address, each bill over the next 14 days with the balance after it, and the agent's gas left | `withdraw`, deposit |
-| Settings | The agent's session and its gas left; the vault's owner and any pending offer | `grantSession`, `revokeSession`, `transferOwnership` (offer or cancel); the offered owner gets an Accept banner (`acceptOwnership`) |
+| Wallets | The vault, deposit address, each bill over the next 14 days with the balance after it | `withdraw`, deposit |
+| Settings | The agent's session; the vault's owner and any pending offer | `grantSession`, `revokeSession`, `transferOwnership` (offer or cancel); the offered owner gets an Accept banner (`acceptOwnership`) |
 
 Every action is simulated first (a refusal shows the vault's reason and costs nothing), then signed in the owner's wallet. Anyone can view a vault; only its owner can sign.
 
 ## First visit
 
 With `VITE_FACTORY_ADDRESS` set, `#/app` works like a bank app's first run: **Connect your wallet to open your treasury**, then **Name your first company** (one signature creates the vault, a second hires the agent), and from then on it opens your company directly, or lets you choose between several. A returning visitor whose wallet already approved the site is signed in without a prompt. The demo company stays one click away (`#/app/overview?demo=1`).
+
+A founder whose own wallet is low on tQDAY (under 0.05, a few signatures' worth) sees a banner with a faucet link. The hosted agent's gas is the operator's job and is not shown to founders.
 
 ## Run
 

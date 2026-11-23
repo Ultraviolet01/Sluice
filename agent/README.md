@@ -11,7 +11,7 @@ Settles the bills the owner listed on a SluiceVault, inside the vault's limits, 
 | Decide | Critical bills first, then oldest due. For each: ask the vault's `checkPayment`, then pay, propose, refuse, wait, or hold a bill that would break the cash buffer until it is due (never a critical one). A bill more than 25% above that payee's last three goes to the owner | `decide`, `workOrder`, `isSpike` |
 | Review | Before paying alone: the injection guard, then Claude. Both can only make the decision stricter (pay → propose or refuse) | `src/guard.ts`, `src/review.ts` |
 | Act | `pay(billId, period)` or `propose(billId, period, note)`, simulated first, then sent. Claude Haiku 5.5 writes the note from the agent's own facts (never bill or invoice text); a template if it can't | `src/loop.ts`, `src/explain.ts` |
-| Alert | A Telegram message when a bill goes to the owner, a payment is refused, a shortfall is ahead, the session is about to expire, the agent's own gas runs low (`SLUICE_MIN_GAS`, default 0.2 tQDAY), or a round fails. Each situation is sent once | `src/notify.ts` |
+| Alert | A Telegram message when a bill goes to the owner, a payment is refused, a shortfall is ahead, the session is about to expire, or a round fails. The agent's own gas running low (`SLUICE_MIN_GAS`, default 0.2 tQDAY) is the operator's concern, so that alert goes to `OPERATOR_TELEGRAM_CHAT_ID` (default: the same chat). Each situation is sent once | `src/notify.ts` |
 | Learn | After three rising owner approvals for one payee, drafts a higher cap. The owner decides | `draftCap` |
 
 Each round has a time limit (`SLUICE_ROUND_SECONDS`, default 420, inside the job's 10 minutes), and each vault at most 90 seconds; bills not reached wait for the next round, which the vault makes safe.

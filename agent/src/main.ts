@@ -13,7 +13,8 @@
 //   TELEGRAM_BOT_TOKEN   optional, with TELEGRAM_CHAT_ID: alerts when something needs the owner
 //   SLUICE_APP_URL       optional, the dashboard's address, linked from alerts
 //   SLUICE_ALERT_STATE   optional, file remembering alerts already sent (default .sluice-alerts.json)
-//   SLUICE_MIN_GAS       optional, alert when the agent's tQDAY falls below this (default 0.2)
+//   SLUICE_MIN_GAS       optional, alert the operator when the agent's tQDAY falls below this (default 0.2)
+//   OPERATOR_TELEGRAM_CHAT_ID  optional, where operator alerts (agent gas, crashes) go; default TELEGRAM_CHAT_ID
 // Flags: --dry-run decides everything and signs nothing.
 
 import { appendFileSync } from "node:fs";
@@ -69,7 +70,8 @@ async function main() {
   const summary: string[] = [];
   let failed = false;
 
-  // The agent pays its own gas: warn the owner before it runs dry, not after bills stop.
+  // The agent's gas is the operator's job, not the founders': this alert goes to the operator's chat.
+  const operator = tg && process.env.OPERATOR_TELEGRAM_CHAT_ID ? { ...tg, chatId: process.env.OPERATOR_TELEGRAM_CHAT_ID } : tg;
   const minGas = process.env.SLUICE_MIN_GAS ? BigInt(Math.round(Number(process.env.SLUICE_MIN_GAS) * 1e6)) * 10n ** 12n : LOW_GAS;
   const gasLeft = await chain.gas().catch(() => null);
   if (gasLeft !== null) {
@@ -79,7 +81,7 @@ async function main() {
       console.log(`[alert] ${low.text}`);
       const g = fresh([low], sent);
       sent = g.sent;
-      if (g.todo.length && tg && !dryRun && (await send(tg, format("agent", g.todo)))) sent[low.key] = Date.now();
+      if (g.todo.length && operator && !dryRun && (await send(operator, format("operator", g.todo)))) sent[low.key] = Date.now();
     }
   }
   for (const vault of vaults as Address[]) {

@@ -52,7 +52,6 @@ export function demoModel(): Model {
     token: "0x456569838f1d43009A91ebA4263147Afd7233483",
     owner: A("71c49ae2"),
     pendingOwner: null,
-    agentGas: 2_400_000_000_000_000_000n,
     paused: false,
     balance,
     cashBuffer: u(10000),

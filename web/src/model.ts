@@ -3,7 +3,7 @@
 
 import { decodeEventLog, hexToString, type Address, type Log } from "viem";
 import { REASON_TEXT, Reason, forecast as runForecast, upcoming as runUpcoming, type Bill } from "../../agent/src/brain.ts";
-import { VAULT_ABI, companyName, gasBalance, publicClient } from "./chain.ts";
+import { VAULT_ABI, companyName, publicClient } from "./chain.ts";
 import type { Kind } from "./data.ts";
 
 export interface Session {
@@ -59,8 +59,6 @@ export interface Model {
   /** Offered new owner who has not accepted yet (two-step transfer), or null. */
   pendingOwner: Address | null;
   paused: boolean;
-  /** The agent's own gas (tQDAY, 18 decimals); it pays for every transaction it sends. */
-  agentGas: bigint | null;
   balance: bigint;
   cashBuffer: bigint;
   threshold: bigint;
@@ -230,7 +228,7 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
     name: (await companyName(vault)) || import.meta.env.VITE_COMPANY_NAME || "Your company",
     vault, token, owner, paused,
     pendingOwner: pendingRaw === "0x0000000000000000000000000000000000000000" ? null : pendingRaw,
-    agentGas: session ? await gasBalance(session.agent).catch(() => null) : null, balance, cashBuffer, threshold, session, bills, upcoming, forecast,
+    balance, cashBuffer, threshold, session, bills, upcoming, forecast,
     approvals: [...latest.values()].sort((a, b) => b.createdAt - a.createdAt),
     activity,
     payees: [...payees.values()],

@@ -6,6 +6,7 @@ import { AppProvider, configuredVault, demoRequested, useApp } from "./state.tsx
 import { FACTORY } from "./chain.ts";
 import Onboarding from "./pages/Onboarding.tsx";
 import { AcceptBanner } from "./pages/Ownership.tsx";
+import { WalletGasBanner } from "./pages/WalletGas.tsx";
 import Landing from "./pages/Landing.tsx";
 import HowItWorks from "./pages/HowItWorks.tsx";
 import SecurityPage from "./pages/SecurityPage.tsx";
@@ -69,6 +70,7 @@ function Dashboard({ page }: { page: string }) {
         {!model.live && <div className="demo-banner">Demo data. {FACTORY ? <><a href="#/app/overview" onClick={() => setTimeout(() => window.location.reload(), 0)}><b>Open your own treasury</b></a>, or use <b>Create a company</b> in the sidebar.</> : <>Open <code>#/app/overview?vault=0x…</code> to see a live vault on Aevum Testnet.</>}</div>}
         {error && <div className="demo-banner warn">Last refresh failed: {error}</div>}
         <AcceptBanner />
+        <WalletGasBanner />
         {page === "overview" && <Overview />}
         {page === "approvals" && <Approvals />}
         {page === "activity" && <Activity />}

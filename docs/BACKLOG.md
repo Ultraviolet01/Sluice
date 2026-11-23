@@ -36,7 +36,7 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 
 ## Done since the last review
 
-Agent gas shown and alerted when low · release a rejected bill · hand the vault to a new owner or a Safe (offer, accept, cancel) · First-visit onboarding (connect, name your first company, open it) · Deposit from the dashboard · Get started checklist · randomised tests (agent and contract) · several invoices at once · several payees at once · a reason on every rule change, on chain.
+Agent gas alerted to the operator, founders warned about their own wallet's gas · release a rejected bill · hand the vault to a new owner or a Safe (offer, accept, cancel) · First-visit onboarding (connect, name your first company, open it) · Deposit from the dashboard · Get started checklist · randomised tests (agent and contract) · several invoices at once · several payees at once · a reason on every rule change, on chain.
 
 ## Roadmap to mainnet
 
