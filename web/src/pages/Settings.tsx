@@ -1,63 +1,85 @@
 import { useState } from "react";
-import { PageHead } from "../components";
-import { NETWORK, ORG } from "../data";
+import { isAddress, type Address } from "viem";
+import { PageHead } from "../components.tsx";
+import { EXPLORER, short } from "../chain.ts";
+import { NETWORK } from "../data.ts";
+import { fmt, toUnits } from "../model.ts";
+import { useApp } from "../state.tsx";
 import "./settings.css";
 
-function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
-  return (
-    <button role="switch" aria-checked={on} aria-label={label} className={`st-toggle${on ? " on" : ""}`} onClick={() => onChange(!on)}><i /></button>
-  );
-}
+export default function Settings() {
+  const { model: m, act, busy } = useApp();
+  const [f, setF] = useState({ agent: "", per: "100", daily: "500", days: "30" });
+  const [err, setErr] = useState<string | null>(null);
+  if (!m) return null;
+  const s = m.session;
+  const live = s && s.active && s.expiresAt > Date.now() / 1000;
 
-const TEAM = [
-  { name: "Ultraviolet (you)", role: "Owner", added: "Oct 3", access: "Full access", cls: "full" },
-  { name: "Priya Sharma", role: "Approver", added: "Oct 11", access: "Can approve", cls: "approve" },
-  { name: "Dele Johnson", role: "Viewer", added: "Oct 29", access: "Read only", cls: "read" },
-];
+  const grant = async () => {
+    setErr(null);
+    try {
+      const agent = (f.agent || s?.agent || "") as Address;
+      if (!isAddress(agent)) throw new Error("Enter the agent's 0x address");
+      const per = toUnits(f.per), daily = toUnits(f.daily);
+      if (per <= 0n || daily < per) throw new Error("The 24-hour cap must be at least the per-payment cap");
+      const days = Number(f.days);
+      if (!(days >= 1 && days <= 365)) throw new Error("Expiry must be 1 to 365 days");
+      const exp = BigInt(Math.floor(Date.now() / 1000) + days * 86400);
+      await act(`Agent session granted to ${short(agent)}`, { fn: "grantSession", args: [agent, per, daily, exp] }, (mm) => ({
+        ...mm,
+        session: { agent, perPaymentCap: per, dailyCap: daily, expiresAt: Number(exp), active: true, spent: 0n },
+      }));
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+  const revoke = () => s && act(`Agent session revoked`, { fn: "revokeSession", args: [s.agent] }, (mm) => ({ ...mm, session: mm.session && { ...mm.session, active: false } }));
 
-export default function Settings({ toast }: { toast: (m: string) => void }) {
-  const [n, setN] = useState({ email: true, slack: false, reminders: true });
   return (
     <>
-      <PageHead title="Settings" sub="Manage the vault, the agent key, notifications and team access" />
+      <PageHead title="Settings" sub="Manage the vault and the agent's session key" />
       <div className="st-top">
         <section className="card st-key">
           <div className="row-between" style={{ alignItems: "flex-start" }}>
-            <div className="grow"><p className="card-title">Agent key</p><p className="card-sub">Session key, can only call pay() within its caps</p></div>
-            <button className="btn btn-primary" onClick={() => toast("revokeSession + grantSession queued for signature")}>Rotate key</button>
+            <div className="grow"><p className="card-title">Agent session</p><p className="card-sub">The agent's key can only call pay() and propose(), inside these caps, until it expires</p></div>
+            {live && <button className="btn btn-danger" disabled={!!busy} onClick={revoke}>Revoke now</button>}
           </div>
-          <div className="st-keybox mono">{ORG.agentKey} · expires Dec 11</div>
-          <div>
-            <p className="faint xs">Gas allowance</p>
-            <div className="bar" style={{ margin: "6px 0" }}><div style={{ width: "48%", background: "var(--status-success)" }} /></div>
-            <p className="faint xs">2.4 of 5 tQDAY left</p>
+          <div className="st-keybox mono">{s ? `${s.agent} · ${live ? `expires ${new Date(s.expiresAt * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : s.active ? "expired" : "revoked"}` : "No session granted yet"}</div>
+          {s && (
+            <div>
+              <p className="faint xs">Used in the last 24 hours</p>
+              <div className="bar" style={{ margin: "6px 0" }}><div style={{ width: `${s.dailyCap > 0n ? Math.min(100, Number((s.spent * 100n) / s.dailyCap)) : 0}%`, background: "var(--status-success)" }} /></div>
+              <p className="faint xs">{fmt(s.spent)} of {fmt(s.dailyCap)} tUSD8, {fmt(s.perPaymentCap)} per payment</p>
+            </div>
+          )}
+          <div className="st-grant">
+            <p className="t14">{s ? "Change or rotate the session" : "Grant a session"}</p>
+            <label className="form-row"><span>Agent address</span><input className="mono" placeholder={s?.agent ?? "0x…"} value={f.agent} onChange={(e) => setF({ ...f, agent: e.target.value })} /></label>
+            <div className="st-3">
+              <label className="form-row"><span>Per payment</span><input inputMode="decimal" value={f.per} onChange={(e) => setF({ ...f, per: e.target.value })} /></label>
+              <label className="form-row"><span>Per 24 hours</span><input inputMode="decimal" value={f.daily} onChange={(e) => setF({ ...f, daily: e.target.value })} /></label>
+              <label className="form-row"><span>Expires in (days)</span><input inputMode="numeric" value={f.days} onChange={(e) => setF({ ...f, days: e.target.value })} /></label>
+            </div>
+            {err && <p className="xs" style={{ color: "var(--status-critical)" }}>{err}</p>}
+            <button className="btn btn-primary" disabled={!!busy} onClick={grant}>{busy ? "Signing…" : "Sign session"}</button>
           </div>
         </section>
         <section className="card st-notif">
-          <p className="card-title" style={{ marginBottom: 8 }}>Notifications</p>
-          <div className="st-tg"><span>Email alerts</span><Toggle label="Email alerts" on={n.email} onChange={(v) => setN({ ...n, email: v })} /></div>
-          <div className="st-tg"><span>Slack digest</span><Toggle label="Slack digest" on={n.slack} onChange={(v) => setN({ ...n, slack: v })} /></div>
-          <div className="st-tg"><span>Approval reminders</span><Toggle label="Approval reminders" on={n.reminders} onChange={(v) => setN({ ...n, reminders: v })} /></div>
+          <p className="card-title" style={{ marginBottom: 8 }}>Agent schedule</p>
+          <p className="muted small">The agent runs every 15 minutes on GitHub Actions. Each run's log lists what it paid, proposed or refused, with transaction links.</p>
+          <p className="muted small" style={{ marginTop: 10 }}>It needs a little tQDAY for gas at its own address.</p>
         </section>
       </div>
 
       <section className="card">
-        <div className="row-between" style={{ paddingBottom: 12 }}><p className="grow card-title">Team access</p><button className="btn btn-primary">Invite</button></div>
-        <div className="st-table">
-          <div className="st-tr st-th"><span>Member</span><span>Role</span><span>Added</span><span>Access</span></div>
-          {TEAM.map((t) => (
-            <div key={t.name} className="st-tr"><span className="w500">{t.name}</span><span>{t.role}</span><span>{t.added}</span><span><span className={`st-acc ${t.cls}`}>{t.access}</span></span></div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card">
         <p className="card-title" style={{ paddingBottom: 12 }}>Vault details</p>
         <div className="st-details">
-          <div><p className="faint xs">Vault name</p><p className="small">{ORG.name}</p></div>
+          <div><p className="faint xs">Company</p><p className="small">{m.name}</p></div>
           <div><p className="faint xs">Network</p><p className="small">{NETWORK.name} ({NETWORK.chainId})</p></div>
-          <div><p className="faint xs">Contract</p><a className="small mono" style={{ color: "var(--accent-sluice)" }} href={`${NETWORK.explorer}/address/${ORG.vaultFull}`} target="_blank" rel="noreferrer">{ORG.vault}</a></div>
+          <div><p className="faint xs">Contract</p><a className="small mono" style={{ color: "var(--accent-sluice)" }} href={`${EXPLORER}/address/${m.vault}`} target="_blank" rel="noreferrer">{short(m.vault)}</a></div>
+          <div><p className="faint xs">Owner</p><p className="small mono">{m.owner ? short(m.owner) : "—"}</p></div>
           <div><p className="faint xs">Stablecoin</p><p className="small">tUSD8 (6 decimals)</p></div>
+          <div><p className="faint xs">Ownership transfer</p><p className="small">Two steps: offer, then accept</p></div>
         </div>
       </section>
     </>

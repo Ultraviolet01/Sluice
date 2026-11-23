@@ -1,75 +1,125 @@
 import { useState } from "react";
-import { PageHead, Pill } from "../components";
-import { fmt, wallets } from "../data";
+import { isAddress, type Address } from "viem";
+import { Modal, PageHead, Pill } from "../components.tsx";
+import { EXPLORER, TUSD8 } from "../chain.ts";
+import { dayLabel, fmt, toUnits } from "../model.ts";
+import { useApp } from "../state.tsx";
 import "./wallets.css";
 
-export default function Wallets({ toast }: { toast: (m: string) => void }) {
-  const [sel, setSel] = useState("payroll");
-  const w = wallets.find((x) => x.id === sel)!;
+function Withdraw({ onClose }: { onClose: () => void }) {
+  const { model: m, act, account } = useApp();
+  const [to, setTo] = useState(account ?? m?.owner ?? "");
+  const [amt, setAmt] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const go = async () => {
+    try {
+      if (!isAddress(to)) throw new Error("Enter a 0x address");
+      const v = toUnits(amt);
+      if (v <= 0n) throw new Error("Amount must be above zero");
+      if (await act(`Withdrew ${fmt(v)} tUSD8`, { fn: "withdraw", args: [to as Address, v] }, (mm) => ({ ...mm, balance: mm.balance - v }))) onClose();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+  return (
+    <Modal title="Withdraw" onClose={onClose}>
+      <p className="muted small" style={{ marginBottom: 12 }}>Owner only. Works while paused and ignores the cash buffer.</p>
+      <label className="form-row"><span>To</span><input className="mono" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+      <label className="form-row"><span>Amount (tUSD8)</span><input value={amt} inputMode="decimal" onChange={(e) => setAmt(e.target.value)} /></label>
+      {err && <p className="xs" style={{ color: "var(--status-critical)" }}>{err}</p>}
+      <div className="row-between" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+        <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" onClick={go}>Withdraw and sign</button>
+      </div>
+    </Modal>
+  );
+}
+
+export default function Wallets() {
+  const { model: m, toast } = useApp();
+  const [withdraw, setWithdraw] = useState(false);
+  if (!m) return null;
+  const above = m.balance - m.cashBuffer;
+  const short = m.forecast.find((d) => d.balance < m.cashBuffer);
+  let running = m.balance;
+  const rows = m.upcoming.map((u) => {
+    running -= u.amount;
+    return { ...u, after: running };
+  });
+  const lowest = rows.reduce((lo, r) => (r.after < lo ? r.after : lo), m.balance);
+
   return (
     <>
-      <PageHead title="Wallets" sub="Sluice keeps each vault above its minimum">
-        <button className="btn btn-secondary">Add vault</button>
+      <PageHead title="Wallets" sub="Sluice keeps the vault above its cash buffer">
+        <button className="btn btn-secondary" onClick={() => setWithdraw(true)}>Withdraw</button>
       </PageHead>
+      {withdraw && <Withdraw onClose={() => setWithdraw(false)} />}
 
       <section className="card wl-stats">
-        <div><p className="muted small">Total across vaults</p><p><span className="display wl-big">48,215.40</span> <span className="unit">tUSD8</span></p><p className="faint xs">All on Aevum Testnet</p></div>
-        <div><p className="muted small">Above minimums</p><p><span className="display wl-big">32,715.40</span> <span className="unit">tUSD8</span></p><p className="faint xs">15,500 held back as minimums</p></div>
-        <div><p className="muted small">Shortfalls ahead</p><p><span className="display wl-big">1</span></p><p className="brass xs">Payroll on Nov 7</p></div>
-        <div><p className="muted small">Gas left for Sluice</p><p><span className="display wl-big">2.4</span> <span className="unit">of 5 tQDAY</span></p><p className="faint xs">About 3 weeks at this pace</p></div>
+        <div><p className="muted small">In the vault</p><p><span className="display wl-big">{fmt(m.balance)}</span> <span className="unit">tUSD8</span></p><p className="faint xs">On Aevum Testnet</p></div>
+        <div><p className="muted small">Above the buffer</p><p><span className="display wl-big">{fmt(above > 0n ? above : 0n)}</span> <span className="unit">tUSD8</span></p><p className="faint xs">{fmt(m.cashBuffer)} held back</p></div>
+        <div><p className="muted small">Shortfalls ahead</p><p><span className="display wl-big">{short ? 1 : 0}</span></p><p className={short ? "brass xs" : "faint xs"}>{short ? `Below the buffer on ${dayLabel(short.day)}` : "None in 14 days"}</p></div>
+        <div><p className="muted small">Agent budget left</p><p><span className="display wl-big">{fmt(m.session ? m.session.dailyCap - m.session.spent : 0n)}</span> <span className="unit">tUSD8</span></p><p className="faint xs">Rolling 24 hours</p></div>
       </section>
 
       <div className="wl-layout">
         <div className="wl-list">
-          {wallets.map((x) => (
-            <button key={x.id} className={`wl-card${x.id === sel ? " on" : ""}`} onClick={() => setSel(x.id)}>
-              <div className="row-between">
-                <div className="grow"><p className="t15">{x.name}</p><p className="mono faint" style={{ fontSize: 11 }}>{x.addr}</p></div>
-                <span className="chip" style={{ fontSize: 11 }}>Aevum</span>
+          <div className="wl-card on">
+            <div className="row-between">
+              <div className="grow"><p className="t15">SluiceVault</p><p className="mono faint" style={{ fontSize: 11 }}>{m.vault.slice(0, 6)}…{m.vault.slice(-4)}</p></div>
+              <span className="chip" style={{ fontSize: 11 }}>Aevum</span>
+            </div>
+            <div className="row-between" style={{ alignItems: "flex-end", marginTop: 12 }}>
+              <div className="grow">
+                <p><span className="display" style={{ fontSize: 22 }}>{fmt(m.balance)}</span> <span className="unit">tUSD8</span></p>
+                <p className="muted xs">Buffer {fmt(m.cashBuffer)}, {m.bills.filter((b) => b.active).length} active bills</p>
               </div>
-              <div className="row-between" style={{ alignItems: "flex-end", marginTop: 12 }}>
-                <div className="grow">
-                  <p><span className="display" style={{ fontSize: 22 }}>{fmt(x.balance)}</span> <span className="unit">tUSD8</span></p>
-                  <p className="muted xs">{x.note}</p>
-                </div>
-                <Pill kind={x.status.kind}>{x.id === "payroll" ? "Short 6,920" : x.id === "vendors" ? "8,795 spare" : "Healthy"}</Pill>
-              </div>
-            </button>
-          ))}
+              <Pill kind={short ? "approval" : "settled"}>{short ? "Shortfall ahead" : "Healthy"}</Pill>
+            </div>
+          </div>
+          <div className="card" style={{ padding: 18 }}>
+            <p className="t14" style={{ marginBottom: 6 }}>Deposit</p>
+            <p className="muted xs">Send tUSD8 (<a className="mono" href={`${EXPLORER}/token/${TUSD8}`} target="_blank" rel="noreferrer">{TUSD8.slice(0, 8)}…</a>) on Aevum Testnet to the vault's address. Get test tUSD8 at faucet.qday.info.</p>
+          </div>
         </div>
 
         <section className="card wl-detail">
           <div className="row-between" style={{ alignItems: "flex-start" }}>
             <div className="grow">
-              <p style={{ fontSize: 20, fontWeight: 500 }}>{w.name} <span className="chip" style={{ fontSize: 11, verticalAlign: "middle" }}>Aevum</span></p>
-              <p className="mono faint xs" style={{ marginTop: 4 }}>{w.full}</p>
+              <p style={{ fontSize: 20, fontWeight: 500 }}>SluiceVault <span className="chip" style={{ fontSize: 11, verticalAlign: "middle" }}>Aevum</span></p>
+              <p className="mono faint xs" style={{ marginTop: 4 }}>{m.vault}</p>
             </div>
-            <button className="btn btn-secondary" onClick={() => { navigator.clipboard?.writeText(w.full).catch(() => {}); toast("Deposit address copied"); }}>Deposit address</button>
+            <button className="btn btn-secondary" onClick={() => { navigator.clipboard?.writeText(m.vault).catch(() => {}); toast("Deposit address copied"); }}>Copy address</button>
           </div>
-          <p><span className="display" style={{ fontSize: 40, letterSpacing: -0.4 }}>{fmt(w.balance)}</span> <span className="unit">tUSD8</span></p>
+          <p><span className="display" style={{ fontSize: 40, letterSpacing: -0.4 }}>{fmt(m.balance)}</span> <span className="unit">tUSD8</span></p>
 
-          {w.id === "payroll" ? (
-            <>
-              <div>
-                <div className="row-between wl-th"><span className="grow" style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Next 14 days</span><span>Balance after</span></div>
-                <div className="wl-tr"><span className="faint w80">Today</span><span className="grow">Current balance</span><span className="w500">4,180.00</span></div>
-                <div className="wl-tr"><span className="faint w80">Pending</span><span className="grow">From Vendors, invoice inv-041 <Pill kind="approval">Waiting</Pill></span><span className="ok-t w90">+8,000.00</span><span className="w500">12,180.00</span></div>
-                <div className="wl-tr"><span className="faint w80">Nov 7</span><span className="grow">Contractor payroll</span><span className="muted w90">−9,600.00</span><span className="w500">2,580.00</span></div>
+          <div>
+            <div className="row-between wl-th"><span className="grow" style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>Next 14 days</span><span>Balance after</span></div>
+            <div className="wl-tr"><span className="faint w80">Today</span><span className="grow">Current balance</span><span className="w500">{fmt(m.balance)}</span></div>
+            {rows.map((r) => (
+              <div key={`${r.billId}:${r.period}`} className="wl-tr">
+                <span className="faint w80">{dayLabel(r.due)}</span>
+                <span className="grow">{r.label} <Pill kind={r.kind}>{r.status}</Pill></span>
+                <span className="muted w90">−{fmt(r.amount)}</span>
+                <span className="w500" style={r.after < m.cashBuffer ? { color: "var(--status-critical)" } : undefined}>{fmt(r.after)}</span>
               </div>
-              <div className="wl-warn">
-                <div className="grow"><p className="t14">Without inv-041, payroll fails on Nov 7</p><p className="muted xs">Approve it and this vault ends at 2,580.00, above its 1,500 minimum</p></div>
-                <a className="btn btn-primary" href="#/app/approvals">Review inv-041</a>
-              </div>
-            </>
+            ))}
+          </div>
+
+          {lowest < m.cashBuffer ? (
+            <div className="wl-warn">
+              <div className="grow"><p className="t14">The balance would fall to {fmt(lowest)}, under the {fmt(m.cashBuffer)} buffer</p><p className="muted xs">Sluice will not pay past the buffer on its own. Deposit, lower the buffer, or approve the bill knowingly.</p></div>
+              <a className="btn btn-primary" href="#/app/approvals">Review</a>
+            </div>
           ) : (
-            <p className="muted small">{w.note}. No shortfalls in the next 14 days.</p>
+            <p className="muted small">Every listed bill in the next 14 days is covered, and the buffer holds.</p>
           )}
 
           <div>
             <div className="row-between" style={{ paddingBottom: 8 }}><p className="grow t14">Rules for this vault</p><a className="btn btn-ghost" href="#/app/rules">Edit in Rules</a></div>
-            <div className="kv"><span className="k">Minimum</span><span className="v">{fmt(w.min).replace(".00", "")} tUSD8</span></div>
-            <div className="kv"><span className="k">Tops up from</span><span className="v">{w.id === "treasury" ? "Incoming payments" : "Vendors, then Treasury vault"}</span></div>
-            <div className="kv"><span className="k">Pays out to</span><span className="v">{w.id === "payroll" ? "Contractor payroll, Design stipends" : w.id === "vendors" ? "Atlas Freight, Northwind Hosting" : "Payroll, Vendors"}</span></div>
+            <div className="kv"><span className="k">Cash buffer</span><span className="v">{fmt(m.cashBuffer)} tUSD8</span></div>
+            <div className="kv"><span className="k">Approval needed above</span><span className="v">{fmt(m.threshold)} tUSD8</span></div>
+            <div className="kv"><span className="k">Owner</span><span className="v mono xs">{m.owner}</span></div>
           </div>
         </section>
       </div>

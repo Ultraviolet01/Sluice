@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
-import type { Kind } from "./data";
-import { ORG } from "./data";
+import { useEffect, type ReactNode } from "react";
+import type { Kind } from "./data.ts";
+import { EXPLORER, short } from "./chain.ts";
+import { useApp } from "./state.tsx";
 import grid from "./assets/icons/grid.svg";
 import inbox from "./assets/icons/inbox.svg";
 import list from "./assets/icons/list.svg";
@@ -13,11 +14,11 @@ export function Pill({ kind, children }: { kind: Kind; children: ReactNode }) {
   return <span className={`pill pill-${kind}`}>{children}</span>;
 }
 
-export function Search({ placeholder = "Search payees, tx hashes" }: { placeholder?: string }) {
+export function Search({ placeholder = "Search payees, tx hashes", value, onChange }: { placeholder?: string; value?: string; onChange?: (v: string) => void }) {
   return (
     <label className="search">
       <img src={searchIcon} width={16} height={16} alt="" />
-      <input placeholder={placeholder} aria-label="Search" />
+      <input placeholder={placeholder} aria-label="Search" value={value} onChange={(e) => onChange?.(e.target.value)} />
     </label>
   );
 }
@@ -30,6 +31,30 @@ export function PageHead({ title, sub, children }: { title: string; sub: string;
         <p className="sub">{sub}</p>
       </div>
       {children}
+    </div>
+  );
+}
+
+export function TxLink({ tx, label }: { tx: string; label?: string }) {
+  if (!tx) return <span className="faint">—</span>;
+  return <a className="mono" style={{ color: "var(--accent-sluice)" }} href={`${EXPLORER}/tx/${tx}`} target="_blank" rel="noreferrer">{label ?? short(tx)}</a>;
+}
+
+export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal card" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        <div className="row-between" style={{ marginBottom: 16 }}>
+          <p className="grow card-title">{title}</p>
+          <button className="btn btn-ghost" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
@@ -53,34 +78,44 @@ const NAV = [
   { to: "settings", label: "Settings", icon: null },
 ];
 
-export function Sidebar({ route, waiting, paused, onTogglePause }: {
-  route: string; waiting: number; paused: boolean; onTogglePause: () => void;
-}) {
+export function Sidebar({ route }: { route: string }) {
+  const { model, account, isOwner, connect, act } = useApp();
+  if (!model) return null;
+  const waiting = model.approvals.filter((a) => a.status === "waiting").length;
+  const s = model.session;
+  const live = s && s.active && s.expiresAt > Date.now() / 1000;
+  const togglePause = () =>
+    act(model.paused ? "Payments resumed" : "All agent payments paused", { fn: model.paused ? "unpause" : "pause", args: [] }, (m) => ({ ...m, paused: !m.paused }));
   return (
     <aside className="sidebar">
       <a href="#/" className="brand display">SLUICE</a>
       <div className="vault-switch">
         <div className="row-between">
-          <span className="name">{ORG.name}</span>
-          <span className="chip">Testnet</span>
+          <span className="name">{model.name}</span>
+          <span className="chip">{model.live ? "Testnet" : "Demo"}</span>
         </div>
-        <span className="addr mono">{ORG.vault}</span>
+        <a className="addr mono" href={model.live ? `${EXPLORER}/address/${model.vault}` : undefined} target="_blank" rel="noreferrer">{short(model.vault)}</a>
+        {model.live && (
+          account
+            ? <span className="xs" style={{ color: isOwner ? "var(--status-success)" : "var(--accent-brass)" }}>{isOwner ? "Signed in as owner" : `Viewing as ${short(account)}`}</span>
+            : <button className="btn btn-secondary" style={{ marginTop: 6, padding: "6px 10px", fontSize: 13 }} onClick={connect}>Connect wallet</button>
+        )}
       </div>
       <nav className="nav">
         {NAV.map((n) => (
-          <a key={n.to} href={`#/app/${n.to}`} className={route === n.to ? "active" : ""}>
+          <a key={n.to} href={`#/app/${n.to}${window.location.hash.includes("?") ? "?" + window.location.hash.split("?")[1] : ""}`} className={route === n.to ? "active" : ""}>
             {n.icon ? <img src={n.icon} alt="" /> : <GearIcon />}
             <span className="label">{n.label}</span>
             {n.to === "approvals" && waiting > 0 && <span className="count">{waiting}</span>}
           </a>
         ))}
       </nav>
-      <div className={`agent-status${paused ? " paused" : ""}`}>
-        <div className="live"><i />{paused ? "Sluice is paused" : "Sluice is running"}</div>
-        <p className="checked">{paused ? "Agent payments halted on chain" : "Checked 12s ago"}</p>
-        <button onClick={onTogglePause}>
+      <div className={`agent-status${model.paused || !live ? " paused" : ""}`}>
+        <div className="live"><i />{model.paused ? "Sluice is paused" : live ? "Sluice is running" : "No agent session"}</div>
+        <p className="checked">{model.paused ? "Agent payments halted on chain" : live ? `Session until ${new Date(s!.expiresAt * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "Grant one under Settings"}</p>
+        <button onClick={togglePause}>
           <img src={pause} width={16} height={16} alt="" />
-          {paused ? "Resume payments" : "Pause all payments"}
+          {model.paused ? "Resume payments" : "Pause all payments"}
         </button>
       </div>
     </aside>
