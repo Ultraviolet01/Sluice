@@ -35,7 +35,7 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 
 ## Done since the last review
 
-Deposit from the dashboard · Get started checklist · randomised tests (agent and contract) · several invoices at once · several payees at once · a reason on every rule change, on chain.
+First-visit onboarding (connect, name your first company, open it) · Deposit from the dashboard · Get started checklist · randomised tests (agent and contract) · several invoices at once · several payees at once · a reason on every rule change, on chain.
 
 ## Roadmap to mainnet
 

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { CompanySwitch, CreatePanel } from "./pages/Panels.tsx";
 import type { Kind } from "./data.ts";
 import { EXPLORER, short } from "./chain.ts";
@@ -47,7 +48,8 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
-  return (
+  // Rendered at the top of the page: inside the sticky sidebar it would sit under the main content.
+  return createPortal(
     <div className="modal-bg" onClick={onClose}>
       <div className="modal card" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="row-between" style={{ marginBottom: 16 }}>
@@ -56,7 +58,8 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

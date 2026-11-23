@@ -1,15 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { isAddress, type Address } from "viem";
-import { connectWallet, errorText, hasWallet, ownerSend, type OwnerCall } from "./chain.ts";
+import { connectWallet, errorText, hasWallet, ownerSend, silentAccount, type OwnerCall } from "./chain.ts";
 import { demoModel } from "./data.ts";
 import { loadLive, type Model } from "./model.ts";
 
 /** The vault to show: ?vault=0x... in the address, else VITE_VAULT_ADDRESS, else the demo. */
 export function configuredVault(): Address | null {
+  if (demoRequested()) return null;
   const q = new URLSearchParams(window.location.hash.split("?")[1] ?? window.location.search).get("vault");
   const v = q || import.meta.env.VITE_VAULT_ADDRESS;
   return v && isAddress(v) ? (v as Address) : null;
 }
+
+/** ?demo=1: show the demo company instead of the first-visit flow. */
+export const demoRequested = () => new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("demo") === "1";
 
 interface Ctx {
   model: Model | null;
@@ -35,7 +40,7 @@ const C = createContext<Ctx | null>(null);
 function ReasonPrompt({ label, suggested, onDone }: { label: string; suggested: string; onDone: (r: string | null) => void }) {
   const [text, setText] = useState(suggested);
   const bytes = new TextEncoder().encode(text).length;
-  return (
+  return createPortal(
     <div className="modal-bg" onClick={() => onDone(null)}>
       <div className="modal card" role="dialog" aria-label="Reason for the record" onClick={(e) => e.stopPropagation()}>
         <p className="card-title">Reason for the record</p>
@@ -47,7 +52,8 @@ function ReasonPrompt({ label, suggested, onDone }: { label: string; suggested: 
           <button className="btn btn-primary" disabled={!text.trim() || bytes > 280} onClick={() => onDone(text.trim())}>Continue to sign</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export const useApp = () => useContext(C)!;
@@ -82,6 +88,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const t = setInterval(reload, 30_000);
     return () => clearInterval(t);
   }, [reload, vault]);
+
+  // A returning visitor whose wallet already approved this site is signed in without a prompt.
+  useEffect(() => {
+    silentAccount().then((a) => a && setAccount((cur) => cur ?? a));
+  }, []);
 
   const connect = async () => {
     try {

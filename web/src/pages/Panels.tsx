@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Address } from "viem";
 import { Modal } from "../components.tsx";
 import { FACTORY, HOSTED_AGENT, createCompany, deposit, errorText, explorerTxUrl, myCompanies, ownerSend, short, tokenBalance } from "../chain.ts";
@@ -92,7 +92,11 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
 }
 
 /** Creates the connected wallet's company vault through the factory, then opens it. */
-export function CreatePanel({ onClose }: { onClose: () => void }) {
+export function CreatePanel({ onClose, inline = false, first = false }: { onClose: () => void; inline?: boolean; first?: boolean }) {
+  // In the first-visit flow it is a page of its own; elsewhere a window.
+  const title = first ? "Name your first company" : "Create your company";
+  const frame = (children: ReactNode) =>
+    inline ? <section className="ob-card" aria-label={title}><h1 className="display ob-title">{title}</h1>{children}</section> : <Modal title={title} onClose={onClose}>{children}</Modal>;
   const { account, connect, toast } = useApp();
   const [f, setF] = useState({ name: "", buffer: "100", threshold: "100", hire: Boolean(HOSTED_AGENT), per: "100", daily: "500" });
   const [err, setErr] = useState<string | null>(null);
@@ -117,7 +121,7 @@ export function CreatePanel({ onClose }: { onClose: () => void }) {
           toast(`Company created; the agent's session wasn't signed (${errorText(e)}). Grant it under Settings.`);
         }
       }
-      window.location.hash = `#/app/rules?vault=${vault}`;
+      window.location.hash = `#/app/overview?vault=${vault}`;
       window.location.reload();
     } catch (e) {
       setErr(errorText(e));
@@ -128,13 +132,13 @@ export function CreatePanel({ onClose }: { onClose: () => void }) {
 
   if (!FACTORY) {
     return (
-      <Modal title="Create your company" onClose={onClose}>
+      frame(<>
         <p className="muted small">Company creation isn't switched on for this site yet (it needs <code>VITE_FACTORY_ADDRESS</code>). You can still deploy a vault from <code>contracts/</code> and open it with <code>?vault=0x…</code>.</p>
-      </Modal>
+      </>)
     );
   }
   return (
-    <Modal title="Create your company" onClose={onClose}>
+    frame(<>
       <p className="muted small">One signature creates your company's own SluiceVault on Aevum Testnet. Your wallet becomes its owner; nobody else, including Sluice, can change its rules or take its money.</p>
       {!account && <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={connect}>Connect wallet</button>}
       <label className="form-row"><span>Company name</span><input maxLength={48} placeholder="Kora Supply Group" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
@@ -157,10 +161,10 @@ export function CreatePanel({ onClose }: { onClose: () => void }) {
       <p className="faint xs" style={{ marginTop: 10 }}>Next: approve payees, list bills and fund the vault with tUSD8. You can change every setting later.</p>
       {err && <p className="xs" style={{ color: "var(--status-critical)", marginTop: 8 }}>{err}</p>}
       <div className="row-between" style={{ marginTop: 16, justifyContent: "flex-end" }}>
-        <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        {!inline && <button className="btn btn-secondary" onClick={onClose}>Cancel</button>}
         <button className="btn btn-primary" disabled={busy || !account} onClick={go}>{busy ? "Creating…" : "Create and sign"}</button>
       </div>
-    </Modal>
+    </>)
   );
 }
 

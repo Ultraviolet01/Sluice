@@ -139,6 +139,18 @@ const eth = () => (window as unknown as { ethereum?: Eip1193 }).ethereum;
 
 export const hasWallet = () => Boolean(eth());
 
+/** The wallet's already-approved account, without a prompt (for returning visitors). */
+export async function silentAccount(): Promise<Address | null> {
+  const provider = eth();
+  if (!provider) return null;
+  try {
+    const [a] = (await provider.request({ method: "eth_accounts" })) as Address[];
+    return a ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Asks the wallet for an account and switches it to Aevum, adding the network if needed. */
 export async function connectWallet(): Promise<Address> {
   const provider = eth();

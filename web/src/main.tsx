@@ -2,7 +2,9 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { Sidebar } from "./components.tsx";
-import { AppProvider, configuredVault, useApp } from "./state.tsx";
+import { AppProvider, configuredVault, demoRequested, useApp } from "./state.tsx";
+import { FACTORY } from "./chain.ts";
+import Onboarding from "./pages/Onboarding.tsx";
 import Landing from "./pages/Landing.tsx";
 import HowItWorks from "./pages/HowItWorks.tsx";
 import SecurityPage from "./pages/SecurityPage.tsx";
@@ -30,6 +32,8 @@ function useHashRoute() {
 
 function Dashboard({ page }: { page: string }) {
   const { model, error, msg, reload } = useApp();
+  // First visit with company creation switched on: connect, then name the first company.
+  if (FACTORY && !configuredVault() && !demoRequested()) return <><Onboarding />{msg && <div className="toast" role="status">{msg}</div>}</>;
   if (!model) {
     return (
       <div className="loading">
@@ -47,7 +51,7 @@ function Dashboard({ page }: { page: string }) {
     <div className="app">
       <Sidebar route={page} />
       <main className="main">
-        {!model.live && <div className="demo-banner">Demo data. Use <b>Create a company</b> in the sidebar for your own vault, or open <code>#/app/overview?vault=0x…</code> to see a live one on Aevum Testnet.</div>}
+        {!model.live && <div className="demo-banner">Demo data. {FACTORY ? <><a href="#/app/overview" onClick={() => setTimeout(() => window.location.reload(), 0)}><b>Open your own treasury</b></a>, or use <b>Create a company</b> in the sidebar.</> : <>Open <code>#/app/overview?vault=0x…</code> to see a live vault on Aevum Testnet.</>}</div>}
         {error && <div className="demo-banner warn">Last refresh failed: {error}</div>}
         {page === "overview" && <Overview />}
         {page === "approvals" && <Approvals />}
