@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { isAddress, type Address } from "viem";
-import { connectWallet, errorText, publicClient, hasWallet, ownerSend, silentAccount, type OwnerCall } from "./chain.ts";
+import { connectWallet, disconnectWallet, onAccountsChanged, errorText, publicClient, hasWallet, ownerSend, silentAccount, type OwnerCall } from "./chain.ts";
 import { demoModel } from "./data.ts";
 import { loadLive, type Model } from "./model.ts";
 import { DEPLOY_BLOCK } from "./logs.ts";
@@ -24,6 +24,7 @@ interface Ctx {
   isOwner: boolean;
   busy: string | null;
   connect(): Promise<void>;
+  disconnect(): Promise<void>;
   reload(): Promise<void>;
   /**
    * Signs an owner action on the live vault, or applies `demo` to the demo data.
@@ -93,7 +94,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // A returning visitor whose wallet already approved this site is signed in without a prompt.
   useEffect(() => {
     silentAccount().then((a) => a && setAccount((cur) => cur ?? a));
+    return onAccountsChanged((a) => setAccount(a));
   }, []);
+
+  const disconnect = async () => {
+    await disconnectWallet();
+    setAccount(null);
+    toast("Wallet disconnected from Sluice.");
+  };
 
   const connect = async () => {
     try {
@@ -144,7 +152,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <C.Provider value={{ model, error, account, isOwner, busy, connect, reload, act, toast, msg }}>
+    <C.Provider value={{ model, error, account, isOwner, busy, connect, disconnect, reload, act, toast, msg }}>
       {children}
       {asking && (
         <ReasonPrompt

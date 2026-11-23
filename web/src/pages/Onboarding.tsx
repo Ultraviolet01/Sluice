@@ -14,7 +14,7 @@ const open = (vault: Address) => {
 };
 
 export default function Onboarding() {
-  const { account, connect } = useApp();
+  const { account, connect, disconnect } = useApp();
   const [companies, setCompanies] = useState<{ vault: Address; name: string }[] | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -52,12 +52,12 @@ export default function Onboarding() {
         <section className="ob-card center"><p className="ob-lead">Looking for your companies…</p></section>
       ) : companies.length === 0 || adding ? (
         <>
-          <p className="ob-signed">Signed in as <span className="mono">{short(account)}</span></p>
+          <p className="ob-signed">Signed in as <span className="mono">{short(account)}</span> · <button className="cs-disconnect" onClick={disconnect}>Use another wallet</button></p>
           <CreatePanel inline first={companies.length === 0} onClose={() => setAdding(false)} />
         </>
       ) : (
         <section className="ob-card" aria-labelledby="ob-pick">
-          <p className="ob-signed">Signed in as <span className="mono">{short(account)}</span></p>
+          <p className="ob-signed">Signed in as <span className="mono">{short(account)}</span> · <button className="cs-disconnect" onClick={disconnect}>Use another wallet</button></p>
           <h1 className="display ob-title" id="ob-pick">Your companies</h1>
           <div className="ob-list">
             {companies.map((c) => (

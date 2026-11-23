@@ -173,7 +173,7 @@ export function CreatePanel({ onClose, inline = false, first = false }: { onClos
  * every company this wallet created, the current one marked, and "Add company".
  */
 export function CompanySwitch() {
-  const { model: m, account, isOwner, connect } = useApp();
+  const { model: m, account, isOwner, connect, disconnect } = useApp();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [list, setList] = useState<{ vault: Address; name: string }[]>([]);
@@ -215,6 +215,12 @@ export function CompanySwitch() {
         <svg className="cs-chev" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M4 5.5 7 2.5l3 3M4 8.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
       {m.live && !account && <button className="btn btn-secondary cs-connect" onClick={connect}>Connect wallet</button>}
+      {account && (
+        <div className="cs-wallet">
+          <span className="xs"><span className="cs-dot" aria-hidden="true" />Connected <span className="mono">{short(account)}</span></span>
+          <button className="cs-disconnect xs" onClick={disconnect}>Disconnect</button>
+        </div>
+      )}
       {open && (
         <div className="cs-menu" role="menu">
           <p className="cs-head">Your companies</p>

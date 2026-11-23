@@ -151,14 +151,43 @@ export async function deposit(token: Address, vault: Address, account: Address, 
 export const publicClient = createPublicClient({ chain: aevum, transport: http() });
 
 type Eip1193 = { request(args: { method: string; params?: unknown[] }): Promise<unknown> };
-const eth = () => (window as unknown as { ethereum?: Eip1193 }).ethereum;
+// Browser wallets announce themselves (EIP-6963). With several extensions installed,
+// window.ethereum may belong to any of them, so prefer MetaMask's own announcement.
+const announced: { rdns: string; provider: Eip1193 }[] = [];
+if (typeof window !== "undefined") {
+  window.addEventListener("eip6963:announceProvider", (e: Event) => {
+    const d = (e as CustomEvent<{ info: { rdns: string }; provider: Eip1193 }>).detail;
+    if (d?.provider && !announced.some((a) => a.rdns === d.info?.rdns)) announced.push({ rdns: d.info?.rdns ?? "", provider: d.provider });
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+}
+const eth = (): Eip1193 | undefined =>
+  announced.find((a) => a.rdns === "io.metamask")?.provider ?? announced[0]?.provider ?? (window as unknown as { ethereum?: Eip1193 }).ethereum;
+
+/** Wallet events (account switched or disconnected in the wallet itself). */
+export function onAccountsChanged(cb: (a: Address | null) => void): () => void {
+  const p = eth() as (Eip1193 & { on?: (e: string, f: (x: unknown) => void) => void; removeListener?: (e: string, f: (x: unknown) => void) => void }) | undefined;
+  if (!p?.on) return () => {};
+  const f = (x: unknown) => cb(((x as Address[]) ?? [])[0] ?? null);
+  p.on("accountsChanged", f);
+  return () => p.removeListener?.("accountsChanged", f);
+}
+
+const DISCONNECTED = "sluice:disconnected";
+const store = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string | null) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* private mode */ } } };
+
+/** Forget the wallet on this site. MetaMask also drops the site's permission where it supports that. */
+export async function disconnectWallet(): Promise<void> {
+  store.set(DISCONNECTED, "1");
+  try { await eth()?.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] }); } catch { /* older wallets: the flag is enough */ }
+}
 
 export const hasWallet = () => Boolean(eth());
 
 /** The wallet's already-approved account, without a prompt (for returning visitors). */
 export async function silentAccount(): Promise<Address | null> {
   const provider = eth();
-  if (!provider) return null;
+  if (!provider || store.get(DISCONNECTED)) return null;
   try {
     const [a] = (await provider.request({ method: "eth_accounts" })) as Address[];
     return a ?? null;
@@ -172,20 +201,22 @@ export async function connectWallet(): Promise<Address> {
   const provider = eth();
   if (!provider) throw new Error("No browser wallet found. Install MetaMask to sign as the owner.");
   const [account] = (await provider.request({ method: "eth_requestAccounts" })) as Address[];
+  if (!account) throw new Error("The wallet shared no account.");
+  store.set(DISCONNECTED, null);
   const hexId = `0x${aevum.id.toString(16)}`;
-  try {
-    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hexId }] });
-  } catch {
-    await provider.request({
-      method: "wallet_addEthereumChain",
-      params: [{
-        chainId: hexId,
-        chainName: aevum.name,
-        nativeCurrency: aevum.nativeCurrency,
-        rpcUrls: ["https://rpc-test.qday.info"],
-        blockExplorerUrls: [EXPLORER],
-      }],
-    });
+  const current = String(await provider.request({ method: "eth_chainId" }).catch(() => "")).toLowerCase();
+  if (current !== hexId) {
+    try {
+      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hexId }] });
+    } catch (e) {
+      const code = (e as { code?: number; data?: { originalError?: { code?: number } } })?.code ?? (e as { data?: { originalError?: { code?: number } } })?.data?.originalError?.code;
+      if (code === 4001) throw new Error("Switch to Aevum Testnet in your wallet to continue.");
+      // 4902 (or any unknown-chain error): add Aevum, which also switches to it.
+      await provider.request({
+        method: "wallet_addEthereumChain",
+        params: [{ chainId: hexId, chainName: aevum.name, nativeCurrency: aevum.nativeCurrency, rpcUrls: ["https://rpc-test.qday.info"], blockExplorerUrls: [EXPLORER] }],
+      });
+    }
   }
   return account;
 }
