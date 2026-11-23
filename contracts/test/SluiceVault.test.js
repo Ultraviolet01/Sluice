@@ -19,8 +19,8 @@ async function deploy() {
   await token.mint(await vault.getAddress(), usd(10_000));
   const now = await time.latest();
   const expiry = now + 30 * DAY;
-  await vault.grantSession(agent.address, usd(500), usd(600), expiry);
-  await vault.setPayeeAllowed(payee.address, true);
+  await vault.grantSession(agent.address, usd(500), usd(600), expiry, "test");
+  await vault.setPayeeAllowed(payee.address, true, "test");
   // bill 0: one-off 80 to allowlisted payee, due now
   await vault.addBill(payee.address, usd(80), now, 0, false, "Northwind Hosting");
   // bill 1: monthly-ish (30 days) 200 to allowlisted payee, due now
@@ -67,9 +67,9 @@ describe("SluiceVault", () => {
     it("cancelled bills cannot be paid, proposed or approved", async () => {
       const { vault, agent } = await loadFixture(deploy);
       await vault.connect(agent).propose(2, 0, "over cap");
-      await vault.cancelBill(2);
+      await vault.cancelBill(2, "test");
       await expect(vault.approve(2, 0)).to.be.revertedWithCustomError(vault, "Refused").withArgs(R.BillCancelled);
-      await vault.cancelBill(0);
+      await vault.cancelBill(0, "test");
       await expect(vault.connect(agent).pay(0, 0)).to.be.revertedWithCustomError(vault, "NotAgentPayable").withArgs(R.BillCancelled);
     });
 
@@ -106,7 +106,7 @@ describe("SluiceVault", () => {
 
     it("approval threshold below the per-payment cap sends larger bills to the owner", async () => {
       const { vault, agent } = await loadFixture(deploy);
-      await vault.setApprovalThreshold(usd(150));
+      await vault.setApprovalThreshold(usd(150), "test");
       expect(await band(vault, agent, 1)).to.deep.equal([Band.NeedsApproval, R.OverApprovalThreshold]);
     });
 
@@ -170,7 +170,7 @@ describe("SluiceVault", () => {
       const { vault, agent, payee } = await loadFixture(deploy);
       await vault.connect(agent).propose(2, 0, "x");
       await expect(vault.connect(agent).propose(2, 0, "y")).to.be.revertedWithCustomError(vault, "Refused").withArgs(R.AlreadyProposed);
-      await vault.setPayeeBlocked(payee.address, true);
+      await vault.setPayeeBlocked(payee.address, true, "test");
       await expect(vault.approve(2, 0)).to.be.revertedWithCustomError(vault, "Refused").withArgs(R.Blocklisted);
     });
 
@@ -192,30 +192,54 @@ describe("SluiceVault", () => {
       const { vault, agent, stranger } = await loadFixture(deploy);
       expect(await vault.agent()).to.equal(agent.address);
       const exp = (await time.latest()) + 10 * DAY;
-      await expect(vault.grantSession(agent.address, usd(200), usd(300), exp)).to.not.emit(vault, "SessionRevoked");
+      await expect(vault.grantSession(agent.address, usd(200), usd(300), exp, "test")).to.not.emit(vault, "SessionRevoked");
       expect((await vault.sessions(agent.address)).perPaymentCap).to.equal(usd(200));
-      await expect(vault.grantSession(stranger.address, usd(100), usd(200), exp))
-        .to.emit(vault, "SessionRevoked").withArgs(agent.address)
+      await expect(vault.grantSession(stranger.address, usd(100), usd(200), exp, "test"))
+        .to.emit(vault, "SessionRevoked").withArgs(agent.address, "test")
         .and.to.emit(vault, "SessionGranted");
       expect(await vault.agent()).to.equal(stranger.address);
       expect((await vault.sessions(agent.address)).active).to.equal(false);
       await expect(vault.connect(agent).pay(0, 0)).to.be.revertedWithCustomError(vault, "NotAgentPayable").withArgs(R.NoSession);
       await expect(vault.connect(stranger).pay(0, 0)).to.emit(vault, "BillPaid");
-      await vault.revokeSession(stranger.address);
+      await vault.revokeSession(stranger.address, "test");
       expect(await vault.agent()).to.equal(ethers.ZeroAddress);
     });
 
     it("logs every policy change with old and new values", async () => {
       const { vault } = await loadFixture(deploy);
-      await expect(vault.setCashBuffer(usd(250))).to.emit(vault, "PolicyChanged").withArgs(ethers.encodeBytes32String("cashBuffer"), usd(100), usd(250));
+      await expect(vault.setCashBuffer(usd(250), "Payroll grew; keep a month in hand"))
+        .to.emit(vault, "PolicyChanged").withArgs(ethers.encodeBytes32String("cashBuffer"), usd(100), usd(250), "Payroll grew; keep a month in hand");
+    });
+
+    it("records the owner's reason on every rule change, up to 280 bytes", async () => {
+      const { vault, agent, payee } = await loadFixture(deploy);
+      await expect(vault.setPayeeBlocked(payee.address, true, "Reported as a lookalike")).to.emit(vault, "PayeeBlocked").withArgs(payee.address, true, "Reported as a lookalike");
+      await expect(vault.cancelBill(0, "Contract ended")).to.emit(vault, "BillCancelled").withArgs(0, "Contract ended");
+      await expect(vault.revokeSession(agent.address, "Laptop lost")).to.emit(vault, "SessionRevoked").withArgs(agent.address, "Laptop lost");
+      await expect(vault.setApprovalThreshold(1, "x".repeat(281))).to.be.revertedWithCustomError(vault, "TooLong");
+      await expect(vault.setApprovalThreshold(1, "x".repeat(280))).to.emit(vault, "PolicyChanged");
+    });
+
+    it("approves or blocks many payees in one signature", async () => {
+      const { vault } = await loadFixture(deploy);
+      const addrs = Array.from({ length: 5 }, () => ethers.Wallet.createRandom().address);
+      const tx = vault.setPayeesAllowed(addrs, true, "New suppliers for Q1");
+      for (const a of addrs) await expect(tx).to.emit(vault, "PayeeAllowed").withArgs(a, true, "New suppliers for Q1");
+      for (const a of addrs) expect(await vault.isAllowedPayee(a)).to.equal(true);
+      await vault.setPayeesBlocked(addrs.slice(0, 2), true, "Scam reports");
+      expect(await vault.isBlockedPayee(addrs[0])).to.equal(true);
+      expect(await vault.isBlockedPayee(addrs[2])).to.equal(false);
+      await expect(vault.setPayeesAllowed([], true, "")).to.be.revertedWithCustomError(vault, "InvalidBill");
+      await expect(vault.setPayeesAllowed(Array(51).fill(addrs[0]), true, "")).to.be.revertedWithCustomError(vault, "InvalidBill");
+      await expect(vault.setPayeesAllowed([ethers.ZeroAddress], true, "")).to.be.revertedWithCustomError(vault, "ZeroAddress");
     });
 
     it("rejects invalid sessions and uses two-step ownership", async () => {
       const { vault, stranger } = await loadFixture(deploy);
       const future = (await time.latest()) + 1000;
-      await expect(vault.grantSession(stranger.address, 0, 1, future)).to.be.revertedWithCustomError(vault, "InvalidSession");
-      await expect(vault.grantSession(stranger.address, 10, 5, future)).to.be.revertedWithCustomError(vault, "InvalidSession");
-      await expect(vault.grantSession(stranger.address, 1, 1, 1)).to.be.revertedWithCustomError(vault, "InvalidSession");
+      await expect(vault.grantSession(stranger.address, 0, 1, future, "test")).to.be.revertedWithCustomError(vault, "InvalidSession");
+      await expect(vault.grantSession(stranger.address, 10, 5, future, "test")).to.be.revertedWithCustomError(vault, "InvalidSession");
+      await expect(vault.grantSession(stranger.address, 1, 1, 1, "test")).to.be.revertedWithCustomError(vault, "InvalidSession");
       await vault.transferOwnership(stranger.address);
       expect(await vault.owner()).to.not.equal(stranger.address);
       await vault.connect(stranger).acceptOwnership();

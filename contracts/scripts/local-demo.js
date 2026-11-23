@@ -12,10 +12,10 @@ async function main() {
   const v = await vault.getAddress();
   await token.mint(v, usd(5_000));
   const now = (await ethers.provider.getBlock("latest")).timestamp;
-  await vault.grantSession(agent.address, usd(500), usd(600), now + 30 * 86400);
-  await vault.setPayeeAllowed(northwind.address, true);
-  await vault.setPayeeAllowed(atlas.address, true);
-  await vault.setPayeeBlocked(scammer.address, true);
+  await vault.grantSession(agent.address, usd(500), usd(600), now + 30 * 86400, "demo company setup");
+  await vault.setPayeeAllowed(northwind.address, true, "demo company setup");
+  await vault.setPayeeAllowed(atlas.address, true, "demo company setup");
+  await vault.setPayeeBlocked(scammer.address, true, "demo company setup");
   await vault.addBill(northwind.address, usd(80), now, 30, false, "Northwind Hosting");
   await vault.addBill(atlas.address, usd(800), now, 0, false, "Atlas Freight, Q4 shipping");
   await vault.addBill(newVendor.address, usd(45), now, 0, false, "Figma subscription");
@@ -27,8 +27,8 @@ async function main() {
   const created = (await tx.wait()).logs.map((l) => factory.interface.parseLog(l)).find((e) => e?.name === "VaultCreated");
   const lantern = await ethers.getContractAt("SluiceVault", created.args.vault);
   await token.mint(created.args.vault, usd(1_000));
-  await lantern.grantSession(agent.address, usd(200), usd(400), now + 30 * 86400);
-  await lantern.setPayeeAllowed(northwind.address, true);
+  await lantern.grantSession(agent.address, usd(200), usd(400), now + 30 * 86400, "demo company setup");
+  await lantern.setPayeeAllowed(northwind.address, true, "demo company setup");
   await lantern.addBill(northwind.address, usd(60), now, 30, true, "Studio rent");
   console.log(JSON.stringify({ vault: v, factory: await factory.getAddress(), factoryVault: created.args.vault, token: await token.getAddress(), agent: agent.address }));
 }

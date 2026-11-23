@@ -46,7 +46,7 @@ async function main() {
       console.log(`  would rotate ${line}`);
       continue;
     }
-    const r = await (await vault.grantSession(next, per, daily, expiry)).wait();
+    const r = await (await vault.grantSession(next, per, daily, expiry, "agent key rotation")).wait();
     const stillOld = old !== ethers.ZeroAddress && old.toLowerCase() !== next.toLowerCase() ? (await vault.sessions(old)).active : false;
     if (stillOld) throw new Error(`${addr}: the old key is still active after rotation`);
     done.push({ vault: addr, from: old, to: next, tx: r.hash });

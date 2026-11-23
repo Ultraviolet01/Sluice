@@ -25,7 +25,7 @@ export default function Settings() {
       const days = Number(f.days);
       if (!(days >= 1 && days <= 365)) throw new Error("Expiry must be 1 to 365 days");
       const exp = BigInt(Math.floor(Date.now() / 1000) + days * 86400);
-      await act(`Agent session granted to ${short(agent)}`, { fn: "grantSession", args: [agent, per, daily, exp] }, (mm) => ({
+      await act(`Agent session granted to ${short(agent)}`, (reason) => ({ fn: "grantSession", args: [agent, per, daily, exp, reason] }), (mm) => ({
         ...mm,
         session: { agent, perPaymentCap: per, dailyCap: daily, expiresAt: Number(exp), active: true, spent: 0n },
       }));
@@ -33,7 +33,7 @@ export default function Settings() {
       setErr((e as Error).message);
     }
   };
-  const revoke = () => s && act(`Agent session revoked`, { fn: "revokeSession", args: [s.agent] }, (mm) => ({ ...mm, session: mm.session && { ...mm.session, active: false } }));
+  const revoke = () => s && act(`Agent session revoked`, (reason) => ({ fn: "revokeSession", args: [s.agent, reason] }), (mm) => ({ ...mm, session: mm.session && { ...mm.session, active: false } }), "Key may be exposed");
 
   return (
     <>

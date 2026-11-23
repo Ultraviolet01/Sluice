@@ -19,13 +19,37 @@ interface Ctx {
   busy: string | null;
   connect(): Promise<void>;
   reload(): Promise<void>;
-  /** Signs an owner action on the live vault, or applies `demo` to the demo data. */
-  act(label: string, call: OwnerCall, demo: (m: Model) => Model): Promise<boolean>;
+  /**
+   * Signs an owner action on the live vault, or applies `demo` to the demo data.
+   * A rule change passes `call` as a function of the reason: the owner is asked
+   * for it first, and it is recorded on chain with the change.
+   */
+  act(label: string, call: OwnerCall | ((reason: string) => OwnerCall), demo: (m: Model) => Model, suggested?: string): Promise<boolean>;
   toast(msg: string): void;
   msg: string | null;
 }
 
 const C = createContext<Ctx | null>(null);
+
+/** Asks for the reason a rule changes; it is stored on chain with the change. */
+function ReasonPrompt({ label, suggested, onDone }: { label: string; suggested: string; onDone: (r: string | null) => void }) {
+  const [text, setText] = useState(suggested);
+  const bytes = new TextEncoder().encode(text).length;
+  return (
+    <div className="modal-bg" onClick={() => onDone(null)}>
+      <div className="modal card" role="dialog" aria-label="Reason for the record" onClick={(e) => e.stopPropagation()}>
+        <p className="card-title">Reason for the record</p>
+        <p className="muted small" style={{ marginTop: 6 }}>{label}. Your reason is stored on chain with the change, so anyone reviewing the vault later sees why.</p>
+        <textarea className="import-box" rows={3} autoFocus maxLength={280} placeholder="e.g. New supplier from the Q1 contract" value={text} onChange={(e) => setText(e.target.value)} />
+        <div className="row-between" style={{ marginTop: 12, justifyContent: "flex-end" }}>
+          <span className="grow xs faint">{bytes}/280</span>
+          <button className="btn btn-secondary" onClick={() => onDone(null)}>Cancel</button>
+          <button className="btn btn-primary" disabled={!text.trim() || bytes > 280} onClick={() => onDone(text.trim())}>Continue to sign</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 export const useApp = () => useContext(C)!;
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -69,8 +93,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isOwner = Boolean(model && (!model.live || (account && model.owner && account.toLowerCase() === model.owner.toLowerCase())));
 
-  const act: Ctx["act"] = async (label, call, demo) => {
+  const [asking, setAsking] = useState<{ label: string; suggested: string; resolve: (r: string | null) => void } | null>(null);
+  const askReason = (label: string, suggested: string) => new Promise<string | null>((resolve) => setAsking({ label, suggested, resolve }));
+
+  const act: Ctx["act"] = async (label, callOrFn, demo, suggested = "") => {
     if (!model) return false;
+    let call: OwnerCall;
+    if (typeof callOrFn === "function") {
+      const reason = await askReason(label, suggested);
+      if (reason === null) return false;
+      call = callOrFn(reason);
+    } else call = callOrFn;
     if (!model.live) {
       setModel(demo(model));
       toast(`Demo: would sign ${call.fn}(). ${label}`);
@@ -98,5 +131,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  return <C.Provider value={{ model, error, account, isOwner, busy, connect, reload, act, toast, msg }}>{children}</C.Provider>;
+  return (
+    <C.Provider value={{ model, error, account, isOwner, busy, connect, reload, act, toast, msg }}>
+      {children}
+      {asking && (
+        <ReasonPrompt
+          label={asking.label}
+          suggested={asking.suggested}
+          onDone={(r) => {
+            asking.resolve(r);
+            setAsking(null);
+          }}
+        />
+      )}
+    </C.Provider>
+  );
 }

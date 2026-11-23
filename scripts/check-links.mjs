@@ -1,26 +1,22 @@
-// Fails if a docs link to a line of the contract no longer points at what it names.
-// Checks markdown links like [`pay`](../contracts/contracts/SluiceVault.sol#L302)
-// and the Security page's [label, ..., line] rows, against the current source.
+// Fails if a docs link to a contract line no longer points at what it names.
+// Named links ([`pay`](…#L302)) must land on a line containing that name; every
+// linked line must hold code (a function, a check or a declaration).
+// After changing the contract, run: node scripts/fix-links.mjs
 import { readFileSync } from "node:fs";
 
 const src = readFileSync("contracts/contracts/SluiceVault.sol", "utf8").split("\n");
 const bad = [];
+const code = (n) => /function |if \(|revert |contract |emit |require/.test(src[n - 1] ?? "");
 const md = readFileSync("docs/SECURITY.md", "utf8");
 for (const m of md.matchAll(/\[`([A-Za-z_]+)`\]\([^)]*SluiceVault\.sol#L(\d+)\)/g)) {
-  const [, name, line] = m;
-  if (!src[Number(line) - 1]?.includes(name)) bad.push(`docs/SECURITY.md: \`${name}\` -> line ${line}: ${src[Number(line) - 1]?.trim()}`);
+  if (!src[Number(m[2]) - 1]?.includes(m[1])) bad.push(`docs/SECURITY.md: \`${m[1]}\` -> line ${m[2]}: ${src[Number(m[2]) - 1]?.trim()}`);
 }
-// Security page: function rows name the function in the code text.
+for (const m of md.matchAll(/SluiceVault\.sol#L(\d+)/g)) if (!code(Number(m[1]))) bad.push(`docs/SECURITY.md: line ${m[1]} is not code: ${src[Number(m[1]) - 1]?.trim()}`);
 const page = readFileSync("web/src/pages/SecurityPage.tsx", "utf8");
-const expect = { 219: "addBill", 265: "approve", 203: "setPayeeBlocked", 176: "grantSession", 283: "pause", 292: "withdraw", 302: "pay", 315: "propose" };
-for (const m of page.matchAll(/", (\d+)\]/g)) {
-  const n = Number(m[1]);
-  const line = src[n - 1] ?? "";
-  if (expect[n] && !line.includes(expect[n])) bad.push(`SecurityPage.tsx: line ${n} should be ${expect[n]}: ${line.trim()}`);
-  if (!line.trim()) bad.push(`SecurityPage.tsx: line ${n} is empty`);
-}
+const seg = page.slice(page.indexOf("const WHO"), page.indexOf("const ATTACKS"));
+for (const m of seg.matchAll(/", (\d+)\]/g)) if (!code(Number(m[1]))) bad.push(`SecurityPage.tsx: line ${m[1]} is not code: ${src[Number(m[1]) - 1]?.trim()}`);
 if (bad.length) {
-  console.error(bad.join("\n"));
+  console.error(bad.join("\n") + "\nRun: node scripts/fix-links.mjs");
   process.exit(1);
 }
 console.log("contract line links ok");

@@ -5,6 +5,7 @@ import { EXPLORER, TUSD8 } from "../chain.ts";
 import { dayLabel, fmt, toUnits } from "../model.ts";
 import { useApp } from "../state.tsx";
 import "./wallets.css";
+import { DepositPanel } from "./Panels.tsx";
 
 function Withdraw({ onClose }: { onClose: () => void }) {
   const { model: m, act, account } = useApp();
@@ -38,6 +39,7 @@ function Withdraw({ onClose }: { onClose: () => void }) {
 export default function Wallets() {
   const { model: m, toast } = useApp();
   const [withdraw, setWithdraw] = useState(false);
+  const [depositing, setDepositing] = useState(false);
   if (!m) return null;
   const above = m.balance - m.cashBuffer;
   const short = m.forecast.find((d) => d.balance < m.cashBuffer);
@@ -52,8 +54,10 @@ export default function Wallets() {
     <>
       <PageHead title="Wallets" sub="Sluice keeps the vault above its cash buffer">
         <button className="btn btn-secondary" onClick={() => setWithdraw(true)}>Withdraw</button>
+        <button className="btn btn-primary" onClick={() => setDepositing(true)}>Deposit</button>
       </PageHead>
       {withdraw && <Withdraw onClose={() => setWithdraw(false)} />}
+      {depositing && <DepositPanel onClose={() => setDepositing(false)} />}
 
       <section className="card wl-stats">
         <div><p className="muted small">In the vault</p><p><span className="display wl-big">{fmt(m.balance)}</span> <span className="unit">tUSD8</span></p><p className="faint xs">On Aevum Testnet</p></div>
@@ -78,8 +82,8 @@ export default function Wallets() {
             </div>
           </div>
           <div className="card" style={{ padding: 18 }}>
-            <p className="t14" style={{ marginBottom: 6 }}>Deposit</p>
-            <p className="muted xs">Send tUSD8 (<a className="mono" href={`${EXPLORER}/token/${TUSD8}`} target="_blank" rel="noreferrer">{TUSD8.slice(0, 8)}…</a>) on Aevum Testnet to the vault's address. Get test tUSD8 at faucet.qday.info.</p>
+            <div className="row-between" style={{ marginBottom: 6 }}><p className="t14 grow">Deposit</p><button className="btn btn-primary ac-sm" onClick={() => setDepositing(true)}>Deposit from wallet</button></div>
+            <p className="muted xs">Or send tUSD8 (<a className="mono" href={`${EXPLORER}/token/${TUSD8}`} target="_blank" rel="noreferrer">{TUSD8.slice(0, 8)}…</a>) on Aevum Testnet to the vault's address. Get test tUSD8 at faucet.qday.info.</p>
           </div>
         </div>
 

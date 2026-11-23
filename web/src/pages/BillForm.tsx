@@ -3,6 +3,7 @@ import { isAddress, type Address } from "viem";
 import { Modal } from "../components.tsx";
 import { toUnits, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
+import { readInvoice } from "../invoice.ts";
 
 /** Lists a bill on the vault (addBill), optionally drafted from an invoice by Claude. */
 export function BillForm({ onClose }: { onClose: () => void }) {
@@ -12,21 +13,12 @@ export function BillForm({ onClose }: { onClose: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
 
-  async function readInvoice(file: File) {
+  async function readOne(file: File) {
     setReading(true);
     setErr(null);
     try {
-      const data = await new Promise<string>((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(String(r.result).split(",")[1] ?? "");
-        r.onerror = () => rej(r.error);
-        r.readAsDataURL(file);
-      });
-      const resp = await fetch("/api/read-invoice", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ data, media_type: file.type }) });
-      const body = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(body.error || `Invoice reader unavailable (${resp.status})`);
-      const d = body.draft as { vendor?: string; address?: string; amount?: string; due?: string; summary?: string };
-      setF((x) => ({ ...x, label: d.vendor ?? x.label, payee: d.address ?? x.payee, amount: d.amount ?? x.amount, due: d.due ?? x.due, invoiceText: d.summary ?? "" }));
+      const d = await readInvoice(file);
+      setF((x) => ({ ...x, label: d.vendor || x.label, payee: d.address || x.payee, amount: d.amount || x.amount, due: d.due || x.due, invoiceText: d.summary || "" }));
     } catch (e) {
       setErr(`${(e as Error).message}. You can still fill the bill in by hand.`);
     } finally {
@@ -68,7 +60,7 @@ export function BillForm({ onClose }: { onClose: () => void }) {
         Sluice can only pay bills you list: this payee, this amount, on this schedule. A payee not on your approved list always comes back to you first.
       </p>
       <label className="drop">
-        <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" hidden onChange={(e) => e.target.files?.[0] && readInvoice(e.target.files[0])} />
+        <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" hidden onChange={(e) => e.target.files?.[0] && readOne(e.target.files[0])} />
         {reading ? "Reading the invoice…" : "Upload an invoice (PDF or photo) to fill this in"}
       </label>
       {field("label", "Name", { placeholder: "Northwind Hosting", maxLength: 64 })}

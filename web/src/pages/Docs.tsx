@@ -13,6 +13,7 @@ const NET = [
 const METHODS = [
   ["addBill(payee, amount, firstDue, intervalDays, critical, label)", "Owner", "Lists a bill. intervalDays = 0 for a one-off; critical bills are paid first and never held"],
   ["addBills(bills[])", "Owner", "Lists up to 50 bills in one signature"],
+  ["setPayeesAllowed / setPayeesBlocked(payees[], bool, reason)", "Owner", "Up to 50 payees in one signature"],
   ["cancelBill(billId) / releaseBill(billId, period)", "Owner", "Stops a bill / reopens a rejected period"],
   ["grantSession(agent, perPaymentCap, dailyCap, expiresAt)", "Owner", "Gives the agent its caps and an expiry"],
   ["revokeSession(agent)", "Owner", "Removes the agent's access at once"],
@@ -81,7 +82,7 @@ export default function Docs() {
           <thead><tr><th>Method</th><th>Who</th><th>What</th></tr></thead>
           <tbody>{METHODS.map(([m, w, d]) => <tr key={m}><td><code>{m}</code></td><td>{w}</td><td>{d}</td></tr>)}</tbody>
         </table>
-        <p className="dp-note">Amounts are in tUSD8's smallest unit: 1 tUSD8 = 1,000,000. Events: <code>BillPaid</code>, <code>PaymentProposed</code>, <code>PaymentRejected</code>, <code>BillAdded</code>, <code>PolicyChanged</code>, <code>SessionGranted</code>. Source: <Code path="contracts/contracts/SluiceVault.sol">SluiceVault.sol</Code>.</p>
+        <p className="dp-note">Every rule change takes a last <code>reason</code> argument (up to 280 bytes), logged on chain with the change. Amounts are in tUSD8's smallest unit: 1 tUSD8 = 1,000,000. Events: <code>BillPaid</code>, <code>PaymentProposed</code>, <code>PaymentRejected</code>, <code>BillAdded</code>, <code>PolicyChanged</code>, <code>SessionGranted</code>. Source: <Code path="contracts/contracts/SluiceVault.sol">SluiceVault.sol</Code>.</p>
       </Sec>
 
       <Sec id="Network" title="Network">
@@ -90,8 +91,8 @@ export default function Docs() {
 
       <Sec id="Check it" title="Check it">
         <ul className="dp-list">
-          <li><b>Contract and attacks:</b> <code>cd contracts && npx hardhat test</code>, 46 tests, including the factory and 22 stolen-key attacks.</li>
-          <li><b>Agent:</b> <code>cd agent && npm test</code>, 32 tests: decisions, holding bills, the injection guard, the review, alerts, and whole rounds against a fake vault.</li>
+          <li><b>Contract and attacks:</b> <code>cd contracts && npx hardhat test</code>, 54 tests, including the factory, 24 stolen-key attacks and randomised operation sequences.</li>
+          <li><b>Agent:</b> <code>cd agent && npm test</code>, 42 tests: decisions, holding bills, the injection guard, the review, alerts, whole rounds against a fake vault, and 2,000-case randomised checks.</li>
           <li><b>End to end on a local chain:</b> the steps in the <a href={`${REPO}#see-the-agent-work-locally`} target="_blank" rel="noreferrer">README</a>, which deploy a demo company and run a real round.</li>
         </ul>
       </Sec>

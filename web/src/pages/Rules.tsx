@@ -11,33 +11,53 @@ import "./rules.css";
 const every = (d: number) => (d === 0 ? "once" : d === 7 ? "weekly" : d === 14 ? "every 2 weeks" : d === 30 ? "every 30 days" : d === 365 ? "yearly" : `every ${d} days`);
 
 function PayeeForm({ onClose }: { onClose: () => void }) {
-  const { act } = useApp();
-  const [addr, setAddr] = useState("");
+  const { act, busy } = useApp();
+  const [text, setText] = useState("");
   const [mode, setMode] = useState<"allow" | "block">("allow");
-  const [err, setErr] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  // One address per line; anything after the address on a line (a name, a comma) is ignored.
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const parsed = lines.map((l) => ({ line: l, addr: (l.match(/0x[0-9a-fA-F]{40}/) ?? [""])[0] }));
+  const bad = parsed.filter((p) => !isAddress(p.addr));
+  const addrs = [...new Map(parsed.filter((p) => isAddress(p.addr)).map((p) => [p.addr.toLowerCase(), p.addr as Address])).values()];
   const go = async () => {
-    if (!isAddress(addr)) return setErr("Enter a 0x address");
-    const a = addr as Address;
+    const one = addrs.length === 1;
     const ok = await act(
-      mode === "allow" ? `Approved payee ${short(a)}` : `Blocked ${short(a)}`,
-      { fn: mode === "allow" ? "setPayeeAllowed" : "setPayeeBlocked", args: [a, true] },
-      (m: Model) => ({ ...m, payees: [...m.payees.filter((p) => p.addr.toLowerCase() !== a.toLowerCase()), { addr: a, label: "", allowed: mode === "allow", blocked: mode === "block", paid: 0 }] }),
+      `${mode === "allow" ? "Approved" : "Blocked"} ${one ? short(addrs[0]) : `${addrs.length} payees`}`,
+      one
+        ? { fn: mode === "allow" ? "setPayeeAllowed" : "setPayeeBlocked", args: [addrs[0], true, reason.trim()] }
+        : { fn: mode === "allow" ? "setPayeesAllowed" : "setPayeesBlocked", args: [addrs, true, reason.trim()] },
+      (m: Model) => ({
+        ...m,
+        payees: [
+          ...m.payees.filter((p) => !addrs.some((a) => a.toLowerCase() === p.addr.toLowerCase())),
+          ...addrs.map((a) => ({ addr: a, label: "", allowed: mode === "allow", blocked: mode === "block", paid: 0 })),
+        ],
+      }),
     );
     if (ok) onClose();
   };
   return (
-    <Modal title="Add a payee" onClose={onClose}>
-      <label className="form-row"><span>Address</span><input className="mono" value={addr} placeholder="0x…" onChange={(e) => setAddr(e.target.value)} /></label>
+    <Modal title="Add payees" onClose={onClose}>
+      <label className="form-row"><span>Addresses, one per line (up to 50)</span>
+        <textarea className="import-box mono" rows={5} placeholder={"0x2d7a…  Northwind Hosting\n0x51d0…  Atlas Freight"} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} />
+      </label>
+      {bad.length > 0 && <p className="xs" style={{ color: "var(--status-critical)" }}>No 0x address on: {bad.map((b) => `"${b.line.slice(0, 24)}"`).join(", ")}</p>}
       <label className="form-row"><span>List</span>
         <select value={mode} onChange={(e) => setMode(e.target.value as "allow" | "block")}>
-          <option value="allow">Approved: Sluice may pay its bills alone, inside the caps</option>
+          <option value="allow">Approved: Sluice may pay their bills alone, inside the caps</option>
           <option value="block">Blocked: never paid, not even with your approval</option>
         </select>
       </label>
-      {err && <p className="xs" style={{ color: "var(--status-critical)" }}>{err}</p>}
+      <label className="form-row"><span>Reason for the record (stored on chain)</span>
+        <input maxLength={280} placeholder={mode === "allow" ? "Suppliers from the Q1 contracts" : "Reported as scams"} value={reason} onChange={(e) => setReason(e.target.value)} />
+      </label>
       <div className="row-between" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+        <span className="grow xs faint">{addrs.length} address{addrs.length === 1 ? "" : "es"}</span>
         <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" onClick={go}>Sign</button>
+        <button className="btn btn-primary" disabled={!addrs.length || bad.length > 0 || addrs.length > 50 || !reason.trim() || !!busy} onClick={go}>
+          {busy ? "Signing…" : "Sign"}
+        </button>
       </div>
     </Modal>
   );
@@ -63,17 +83,17 @@ export default function Rules() {
     } catch {
       return;
     }
-    await act(fn === "setCashBuffer" ? `Cash buffer set to ${fmt(v)}` : `Approval threshold set to ${fmt(v)}`, { fn, args: [v] }, (mm) => (fn === "setCashBuffer" ? { ...mm, cashBuffer: v } : { ...mm, threshold: v }));
+    await act(fn === "setCashBuffer" ? `Cash buffer set to ${fmt(v)}` : `Approval threshold set to ${fmt(v)}`, (reason) => ({ fn, args: [v, reason] }), (mm) => (fn === "setCashBuffer" ? { ...mm, cashBuffer: v } : { ...mm, threshold: v }));
   };
 
   const togglePayee = (addr: Address, field: "allowed" | "blocked", value: boolean) =>
-    act(`${field === "allowed" ? (value ? "Approved" : "Removed") : value ? "Blocked" : "Unblocked"} ${short(addr)}`, { fn: field === "allowed" ? "setPayeeAllowed" : "setPayeeBlocked", args: [addr, value] }, (mm) => ({
+    act(`${field === "allowed" ? (value ? "Approved" : "Removed") : value ? "Blocked" : "Unblocked"} ${short(addr)}`, (reason) => ({ fn: field === "allowed" ? "setPayeeAllowed" : "setPayeeBlocked", args: [addr, value, reason] }), (mm) => ({
       ...mm,
       payees: mm.payees.map((p) => (p.addr === addr ? { ...p, [field]: value } : p)),
     }));
 
   const cancelBill = (id: number) =>
-    act(`Cancelled bill #${id}`, { fn: "cancelBill", args: [BigInt(id)] }, (mm) => ({ ...mm, bills: mm.bills.map((b) => (b.id === id ? { ...b, active: false } : b)), upcoming: mm.upcoming.filter((u) => u.billId !== id) }));
+    act(`Cancelled bill #${id}`, (reason) => ({ fn: "cancelBill", args: [BigInt(id), reason] }), (mm) => ({ ...mm, bills: mm.bills.map((b) => (b.id === id ? { ...b, active: false } : b)), upcoming: mm.upcoming.filter((u) => u.billId !== id) }));
 
   const row = (k: string, sub: string, input: JSX.Element) => (
     <div key={k} className="ru-row">
@@ -106,7 +126,7 @@ export default function Rules() {
         <section className="card">
           <div className="row-between" style={{ paddingBottom: 8 }}>
             <div className="grow"><p className="card-title">Payees</p><p className="card-sub">Approved ones are paid without asking, inside the caps</p></div>
-            <button className="btn btn-secondary" onClick={() => setModal("payee")}>Add payee</button>
+            <button className="btn btn-secondary" onClick={() => setModal("payee")}>Add payees</button>
           </div>
           {m.payees.map((p) => (
             <div key={p.addr} className="ru-row">

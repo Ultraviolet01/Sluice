@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Address } from "viem";
 import { Modal } from "../components.tsx";
-import { FACTORY, HOSTED_AGENT, createCompany, errorText, myCompanies, ownerSend, short } from "../chain.ts";
+import { FACTORY, HOSTED_AGENT, createCompany, deposit, errorText, explorerTxUrl, myCompanies, ownerSend, short, tokenBalance } from "../chain.ts";
 import { fmt, toUnits, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
 import { parseBills } from "./importBills.ts";
+import { draftToLine, readInvoice } from "../invoice.ts";
 
 const SAMPLE = `name, payee, amount, first due, repeat, critical
 Northwind Hosting, 0x2d7a…, 80, 2026-12-01, monthly, no
@@ -18,7 +19,26 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
   const good = rows.filter((r) => r.bill);
   const bad = rows.filter((r) => r.error);
 
+  const [reading, setReading] = useState<string | null>(null);
+  const [readErr, setReadErr] = useState<string[]>([]);
   const file = async (f: File) => setText(await f.text());
+  /** Several invoices: each becomes one line to check before signing. */
+  const invoices = async (files: FileList) => {
+    const errs: string[] = [];
+    const out: string[] = [];
+    const list = [...files].slice(0, 20);
+    for (let i = 0; i < list.length; i++) {
+      setReading(`Reading invoice ${i + 1} of ${list.length}…`);
+      try {
+        out.push(draftToLine(await readInvoice(list[i]), list[i].name.replace(/\.[^.]+$/, "")));
+      } catch (e) {
+        errs.push(`${list[i].name}: ${(e as Error).message}`);
+      }
+    }
+    setText((t) => [t.trim(), ...out].filter(Boolean).join("\n"));
+    setReadErr(errs);
+    setReading(null);
+  };
   const go = async () => {
     const bills = good.map((r) => r.bill!);
     const ok = await act(`Listed ${bills.length} bills`, { fn: "addBills", args: [bills] }, (m: Model) => ({
@@ -31,10 +51,18 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="Import bills" onClose={onClose}>
       <p className="muted small">One bill per line: name, payee address, amount in tUSD8, first due date (YYYY-MM-DD), repeat (once, weekly, 2 weeks, monthly, yearly or a number of days), critical (yes or no). Up to 50 at a time, listed with one signature.</p>
-      <label className="drop" style={{ marginTop: 12 }}>
-        <input type="file" accept=".csv,text/csv,text/plain" hidden onChange={(e) => e.target.files?.[0] && file(e.target.files[0])} />
-        Upload a CSV file, or paste below
-      </label>
+      <div className="import-drops">
+        <label className="drop">
+          <input type="file" accept=".csv,text/csv,text/plain" hidden onChange={(e) => e.target.files?.[0] && file(e.target.files[0])} />
+          Upload a CSV file
+        </label>
+        <label className="drop">
+          <input type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp" hidden onChange={(e) => e.target.files?.length && invoices(e.target.files)} />
+          {reading ?? "Read invoices (PDFs or photos, up to 20)"}
+        </label>
+      </div>
+      <p className="faint xs" style={{ marginTop: 6 }}>Each invoice becomes a line below. Check every field: a payment address the reader couldn't find is left empty for you.</p>
+      {readErr.length > 0 && <p className="xs" style={{ color: "var(--status-critical)" }}>{readErr.join("; ")}</p>}
       <textarea className="import-box mono" rows={8} placeholder={SAMPLE} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} />
       {rows.length > 0 && (
         <div className="import-preview">
@@ -84,7 +112,7 @@ export function CreatePanel({ onClose }: { onClose: () => void }) {
         const per = toUnits(f.per), daily = toUnits(f.daily);
         const exp = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
         try {
-          await ownerSend(vault, account, { fn: "grantSession", args: [HOSTED_AGENT, per, daily, exp] });
+          await ownerSend(vault, account, { fn: "grantSession", args: [HOSTED_AGENT, per, daily, exp, "Hired Sluice's agent at sign-up"] });
         } catch (e) {
           toast(`Company created; the agent's session wasn't signed (${errorText(e)}). Grant it under Settings.`);
         }
@@ -157,5 +185,94 @@ export function CompanySwitch({ current }: { current: Address }) {
       {!list.some((c) => c.vault.toLowerCase() === current.toLowerCase()) && <option value="">Switch company…</option>}
       {list.map((c) => <option key={c.vault} value={c.vault}>{c.name}</option>)}
     </select>
+  );
+}
+
+/** Deposit tUSD8 from the connected wallet into the vault. */
+export function DepositPanel({ onClose }: { onClose: () => void }) {
+  const { model: m, account, connect, toast, reload } = useApp();
+  const [amount, setAmount] = useState("");
+  const [have, setHave] = useState<bigint | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (account && m?.live) tokenBalance(m.token, account).then(setHave).catch(() => setHave(null));
+  }, [account, m?.live, m?.token]);
+  if (!m) return null;
+
+  const go = async () => {
+    setErr(null);
+    try {
+      const v = toUnits(amount);
+      if (v <= 0n) throw new Error("Enter an amount above zero");
+      if (!m.live) {
+        toast(`Demo: would send ${fmt(v)} tUSD8 to the vault`);
+        return onClose();
+      }
+      if (!account) throw new Error("Connect your wallet first");
+      if (have !== null && v > have) throw new Error(`Your wallet holds ${fmt(have)} tUSD8`);
+      setBusy(true);
+      const tx = await deposit(m.token, m.vault, account, v);
+      toast(`Deposited ${fmt(v)} tUSD8`);
+      await reload();
+      window.open(explorerTxUrl(tx), "_blank", "noopener");
+      onClose();
+    } catch (e) {
+      setErr(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Deposit tUSD8" onClose={onClose}>
+      <p className="muted small">Sends tUSD8 from your wallet into the vault. Anyone can deposit; only the owner can take money out. Get test tUSD8 at faucet.qday.info.</p>
+      {m.live && !account && <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={connect}>Connect wallet</button>}
+      <label className="form-row">
+        <span>Amount (tUSD8){have !== null ? ` · your wallet holds ${fmt(have)}` : ""}</span>
+        <input inputMode="decimal" autoFocus placeholder="100.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+      </label>
+      {have !== null && have > 0n && <button className="link-btn xs" onClick={() => setAmount(fmt(have).replace(/,/g, ""))}>Use all</button>}
+      <p className="faint xs" style={{ marginTop: 8 }}>To vault <span className="mono">{m.vault}</span></p>
+      {err && <p className="xs" style={{ color: "var(--status-critical)", marginTop: 8 }}>{err}</p>}
+      <div className="row-between" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+        <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" disabled={busy || !amount} onClick={go}>{busy ? "Sending…" : "Deposit and sign"}</button>
+      </div>
+    </Modal>
+  );
+}
+
+/** For a new company: the steps left before Sluice can pay bills. Hidden once all are done. */
+export function GetStarted() {
+  const { model: m } = useApp();
+  const [depositing, setDepositing] = useState(false);
+  if (!m) return null;
+  const s = m.session;
+  const steps = [
+    { done: m.balance > 0n, title: "Fund the vault", body: "Deposit tUSD8 for the bills Sluice will pay.", action: <button className="btn btn-primary ac-sm" onClick={() => setDepositing(true)}>Deposit</button> },
+    { done: m.payees.some((p) => p.allowed && !p.blocked), title: "Approve your payees", body: "Bills to approved payees can be paid without asking you.", action: <a className="btn btn-secondary ac-sm" href="#/app/rules">Add payees</a> },
+    { done: m.bills.some((b) => b.active), title: "List your bills", body: "Sluice can only pay bills on this list. Import a CSV or invoices.", action: <a className="btn btn-secondary ac-sm" href="#/app/rules">Add bills</a> },
+    { done: Boolean(s?.active && s.expiresAt > Date.now() / 1000), title: "Hire the agent", body: "Give it a session with a cap per payment, a 24-hour budget and an expiry.", action: <a className="btn btn-secondary ac-sm" href="#/app/settings">Grant a session</a> },
+  ];
+  const left = steps.filter((x) => !x.done).length;
+  if (!left) return null;
+  return (
+    <section className="card gs">
+      <div className="row-between">
+        <div className="grow"><p className="card-title">Get started</p><p className="card-sub">{steps.length - left} of {steps.length} done. Your limits are already in place.</p></div>
+        <div className="gs-bar"><div style={{ width: `${((steps.length - left) / steps.length) * 100}%` }} /></div>
+      </div>
+      <ol className="gs-steps">
+        {steps.map((x) => (
+          <li key={x.title} className={x.done ? "done" : ""}>
+            <span className="gs-dot">{x.done ? "✓" : ""}</span>
+            <div className="grow"><p className="t14">{x.title}</p><p className="muted xs">{x.body}</p></div>
+            {!x.done && x.action}
+          </li>
+        ))}
+      </ol>
+      {depositing && <DepositPanel onClose={() => setDepositing(false)} />}
+    </section>
   );
 }

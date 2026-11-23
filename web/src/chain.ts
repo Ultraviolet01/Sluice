@@ -28,6 +28,7 @@ export const VAULT_ABI = parseAbi([
   "function settlements(uint256, uint32) view returns (uint8 status, address agent, uint64 createdAt, uint8 reason, string note)",
   "function isAllowedPayee(address) view returns (bool)",
   "function agent() view returns (address)",
+  "function token() view returns (address)",
   "function isBlockedPayee(address) view returns (bool)",
   // owner actions
   "function approve(uint256 billId, uint32 period)",
@@ -36,25 +37,27 @@ export const VAULT_ABI = parseAbi([
   "function unpause()",
   "function addBill(address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label) returns (uint256)",
   "function addBills((address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label)[] bills) returns (uint256)",
-  "function cancelBill(uint256 billId)",
-  "function setPayeeAllowed(address payee, bool allowed)",
-  "function setPayeeBlocked(address payee, bool blocked)",
-  "function setCashBuffer(uint256 amount)",
-  "function setApprovalThreshold(uint256 amount)",
-  "function grantSession(address agent, uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt)",
-  "function revokeSession(address agent)",
+  "function cancelBill(uint256 billId, string reason)",
+  "function setPayeeAllowed(address payee, bool allowed, string reason)",
+  "function setPayeesAllowed(address[] payees, bool allowed, string reason)",
+  "function setPayeesBlocked(address[] payees, bool blocked, string reason)",
+  "function setPayeeBlocked(address payee, bool blocked, string reason)",
+  "function setCashBuffer(uint256 amount, string reason)",
+  "function setApprovalThreshold(uint256 amount, string reason)",
+  "function grantSession(address agent, uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt, string reason)",
+  "function revokeSession(address agent, string reason)",
   "function withdraw(address to, uint256 amount)",
   // events
   "event BillPaid(uint256 indexed billId, uint32 indexed period, address indexed payee, uint256 amount, address agent, bool ownerApproved)",
   "event PaymentProposed(uint256 indexed billId, uint32 indexed period, address indexed agent, uint256 amount, uint8 reason, string note)",
   "event PaymentRejected(uint256 indexed billId, uint32 indexed period)",
   "event BillAdded(uint256 indexed billId, address indexed payee, uint256 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label)",
-  "event BillCancelled(uint256 indexed billId)",
-  "event PayeeAllowed(address indexed payee, bool allowed)",
-  "event PayeeBlocked(address indexed payee, bool blocked)",
-  "event PolicyChanged(bytes32 indexed field, uint256 oldValue, uint256 newValue)",
-  "event SessionGranted(address indexed agent, uint256 perPaymentCap, uint256 dailyCap, uint64 expiresAt)",
-  "event SessionRevoked(address indexed agent)",
+  "event BillCancelled(uint256 indexed billId, string reason)",
+  "event PayeeAllowed(address indexed payee, bool allowed, string reason)",
+  "event PayeeBlocked(address indexed payee, bool blocked, string reason)",
+  "event PolicyChanged(bytes32 indexed field, uint256 oldValue, uint256 newValue, string reason)",
+  "event SessionGranted(address indexed agent, uint256 perPaymentCap, uint256 dailyCap, uint64 expiresAt, string reason)",
+  "event SessionRevoked(address indexed agent, string reason)",
   "event Withdrawn(address indexed to, uint256 amount)",
   "event Paused(address account)",
   "event Unpaused(address account)",
@@ -111,7 +114,23 @@ export async function companyName(vault: Address): Promise<string | null> {
   }
 }
 
-export const ERC20_ABI = parseAbi(["function balanceOf(address) view returns (uint256)"]);
+export const ERC20_ABI = parseAbi(["function balanceOf(address) view returns (uint256)", "function transfer(address to, uint256 amount) returns (bool)"]);
+
+export async function tokenBalance(token: Address, who: Address): Promise<bigint> {
+  return (await publicClient.readContract({ address: token, abi: ERC20_ABI, functionName: "balanceOf", args: [who] })) as bigint;
+}
+
+/** Sends tUSD8 from the connected wallet to the vault. Anyone may deposit; only the owner can take it out. */
+export async function deposit(token: Address, vault: Address, account: Address, amount: bigint): Promise<Hex> {
+  const provider = eth();
+  if (!provider) throw new Error("No browser wallet found.");
+  const wallet = createWalletClient({ chain: aevum, account, transport: custom(provider) });
+  const { request } = await publicClient.simulateContract({ address: token, abi: ERC20_ABI, functionName: "transfer", args: [vault, amount], account });
+  const hash = await wallet.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") throw new Error("Transaction reverted");
+  return hash;
+}
 
 export const publicClient = createPublicClient({ chain: aevum, transport: http() });
 
@@ -148,11 +167,12 @@ export type OwnerCall =
   | { fn: "pause" | "unpause"; args: [] }
   | { fn: "addBill"; args: [Address, bigint, bigint, number, boolean, string] }
   | { fn: "addBills"; args: [BillInput[]] }
-  | { fn: "cancelBill"; args: [bigint] }
-  | { fn: "setPayeeAllowed" | "setPayeeBlocked"; args: [Address, boolean] }
-  | { fn: "setCashBuffer" | "setApprovalThreshold"; args: [bigint] }
-  | { fn: "grantSession"; args: [Address, bigint, bigint, bigint] }
-  | { fn: "revokeSession"; args: [Address] }
+  | { fn: "cancelBill"; args: [bigint, string] }
+  | { fn: "setPayeeAllowed" | "setPayeeBlocked"; args: [Address, boolean, string] }
+  | { fn: "setPayeesAllowed" | "setPayeesBlocked"; args: [Address[], boolean, string] }
+  | { fn: "setCashBuffer" | "setApprovalThreshold"; args: [bigint, string] }
+  | { fn: "grantSession"; args: [Address, bigint, bigint, bigint, string] }
+  | { fn: "revokeSession"; args: [Address, string] }
   | { fn: "withdraw"; args: [Address, bigint] };
 
 /** Simulates (so a refusal shows its reason and costs nothing), signs, and waits for the receipt. */
@@ -172,5 +192,7 @@ export function errorText(e: unknown): string {
   const err = e as { shortMessage?: string; message?: string };
   return (err.shortMessage || err.message || String(e)).split("\n")[0].slice(0, 200);
 }
+
+export const explorerTxUrl = (tx: string) => `${EXPLORER}/tx/${tx}`;
 
 export const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;

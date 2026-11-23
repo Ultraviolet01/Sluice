@@ -4,24 +4,24 @@ import "./landing.css";
 const V = "contracts/contracts/SluiceVault.sol";
 
 const WHO = [
-  ["List or cancel bills", "Yes", "No", 219],
-  ["Approve or reject a proposal", "Yes", "No", 265],
-  ["Set caps, buffer, threshold, payee lists", "Yes", "No", 203],
-  ["Grant or revoke the agent's session", "Yes", "No", 176],
-  ["Pause and resume", "Yes", "No", 283],
-  ["Withdraw (even while paused)", "Yes", "No", 292],
-  ["Settle a listed bill inside the limits", "—", "Yes", 302],
-  ["File a bill for the owner", "—", "Yes", 315],
+  ["List or cancel bills", "Yes", "No", 252],
+  ["Approve or reject a proposal", "Yes", "No", 299],
+  ["Set caps, buffer, threshold, payee lists", "Yes", "No", 208],
+  ["Grant or revoke the agent's session", "Yes", "No", 177],
+  ["Pause and resume", "Yes", "No", 317],
+  ["Withdraw (even while paused)", "Yes", "No", 326],
+  ["Settle a listed bill inside the limits", "—", "Yes", 336],
+  ["File a bill for the owner", "—", "Yes", 349],
 ] as const;
 
 const GUARDS = [
-  ["Bills only", "pay(bill, period) takes no payee and no amount. The vault pays the bill's own payee its own amount, and only the owner can list a bill.", 302],
-  ["Once per period", "Each bill period settles at most once. A rejected one stays closed until the owner releases it.", 337],
-  ["Not early", "A period can't be settled more than 3 days before it's due.", 335],
-  ["Blocklist wins", "A blocked payee is refused for the agent and for the owner's approval alike.", 339],
-  ["Rolling 24-hour cap", "Sums the agent's own payments over the last 24 hours, not a calendar day, so midnight can't be gamed.", 344],
-  ["Cash buffer", "No agent payment may leave the vault below the owner's buffer.", 346],
-  ["Payment ring", "At most 32 agent payments in 24 hours; the 33rd is refused instead of overwriting the record the cap relies on.", 384],
+  ["Bills only", "pay(bill, period) takes no payee and no amount. The vault pays the bill's own payee its own amount, and only the owner can list a bill.", 336],
+  ["Once per period", "Each bill period settles at most once. A rejected one stays closed until the owner releases it.", 371],
+  ["Not early", "A period can't be settled more than 3 days before it's due.", 369],
+  ["Blocklist wins", "A blocked payee is refused for the agent and for the owner's approval alike.", 373],
+  ["Rolling 24-hour cap", "Sums the agent's own payments over the last 24 hours, not a calendar day, so midnight can't be gamed.", 378],
+  ["Cash buffer", "No agent payment may leave the vault below the owner's buffer.", 380],
+  ["Payment ring", "At most 32 agent payments in 24 hours; the 33rd is refused instead of overwriting the record the cap relies on.", 422],
   ["Two-step ownership", "Ownership moves by offer and accept, so a typo can't hand the vault away.", 19],
 ] as const;
 
@@ -34,6 +34,7 @@ const ATTACKS = [
   ["Drain the vault with many small payments", "Refused once the rolling 24-hour cap is reached"],
   ["Pay a blocklisted payee, alone or by proposal", "Refused: blocklisted"],
   ["Act after revocation, expiry or pause", "Refused: no session / expired / paused"],
+  ["Approve or unblock many addresses at once", "Refused: owner only"],
   ["Keep using a key after the owner rotated to a new one", "Refused: granting a new agent revokes the old key"],
   ["Pull tokens with transferFrom", "Impossible: the vault never grants an allowance"],
 ] as const;

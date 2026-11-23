@@ -21,6 +21,7 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 | 11 | Key scripts | **Done**: `agent:new-key`, `agent:fund`, and `agent:rotate` (hires the new key on every vault you own, keeping each vault's caps; the old key stops in the same transaction; `DRY_RUN=1` shows the plan). Tested locally | — |
 | 12 | Demo video | Record with `docs/DEMO.md`; link it without a login | Recording |
 | 13 | Submission checklist | Fill the open rows in `docs/JUDGING.md`: vault and factory addresses, explorer links, hosted app link, video | — |
+| 14 | Testnet checks in `npm run verify` | Once `contracts/deployments/aevumTestnet-deploy.json` exists, verify also checks the live network: the factory answers, the vault's owner and token are right, and an agent dry run on the demo company decides every bill | — |
 
 ## Optional, if time allows
 
@@ -31,6 +32,10 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 | Dark mode | A theme toggle on the dashboard | Small |
 | Calendar months and years | Monthly bills on the same date each month instead of every 30 days | Medium |
 | Excel export | A workbook with summary, activity, bills and ledger sheets (CSV exists) | Medium |
+
+## Done since the last review
+
+Deposit from the dashboard · Get started checklist · randomised tests (agent and contract) · several invoices at once · several payees at once · a reason on every rule change, on chain.
 
 ## Roadmap to mainnet
 

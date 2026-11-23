@@ -129,13 +129,14 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
 
     // --------------------------------------------------------------- events
 
-    event SessionGranted(address indexed agent, uint256 perPaymentCap, uint256 dailyCap, uint64 expiresAt);
-    event SessionRevoked(address indexed agent);
-    event PayeeAllowed(address indexed payee, bool allowed);
-    event PayeeBlocked(address indexed payee, bool blocked);
-    event PolicyChanged(bytes32 indexed field, uint256 oldValue, uint256 newValue);
+    event SessionGranted(address indexed agent, uint256 perPaymentCap, uint256 dailyCap, uint64 expiresAt, string reason);
+    event SessionRevoked(address indexed agent, string reason);
+    event PayeeAllowed(address indexed payee, bool allowed, string reason);
+    event PayeeBlocked(address indexed payee, bool blocked, string reason);
+    /// @notice Every rule change is logged with its old value, new value and the owner's reason.
+    event PolicyChanged(bytes32 indexed field, uint256 oldValue, uint256 newValue, string reason);
     event BillAdded(uint256 indexed billId, address indexed payee, uint256 amount, uint64 firstDue, uint32 intervalDays, bool critical, string label);
-    event BillCancelled(uint256 indexed billId);
+    event BillCancelled(uint256 indexed billId, string reason);
     event BillReleased(uint256 indexed billId, uint32 indexed period);
     /// @notice Receipt for every settled bill period.
     event BillPaid(
@@ -167,51 +168,83 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
         token = token_;
         cashBuffer = cashBuffer_;
         approvalThreshold = approvalThreshold_;
-        emit PolicyChanged("cashBuffer", 0, cashBuffer_);
-        emit PolicyChanged("approvalThreshold", 0, approvalThreshold_);
+        emit PolicyChanged("cashBuffer", 0, cashBuffer_, "vault created");
+        emit PolicyChanged("approvalThreshold", 0, approvalThreshold_, "vault created");
     }
 
     // ================================================================ owner
 
-    function grantSession(address newAgent, uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt) external onlyOwner {
+    function grantSession(address newAgent, uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt, string calldata reason)
+        external
+        onlyOwner
+    {
+        _checkReason(reason);
         if (newAgent == address(0)) revert ZeroAddress();
         if (perPaymentCap == 0 || dailyCap < perPaymentCap || expiresAt <= block.timestamp) revert InvalidSession();
         address old = agent;
         if (old != address(0) && old != newAgent && sessions[old].active) {
             sessions[old].active = false;
-            emit SessionRevoked(old);
+            emit SessionRevoked(old, reason);
         }
         agent = newAgent;
         sessions[newAgent] = Session(perPaymentCap, dailyCap, expiresAt, true);
-        emit SessionGranted(newAgent, perPaymentCap, dailyCap, expiresAt);
+        emit SessionGranted(newAgent, perPaymentCap, dailyCap, expiresAt, reason);
     }
 
     /// @notice Instantly removes an agent's ability to pay or propose.
-    function revokeSession(address who) external onlyOwner {
+    function revokeSession(address who, string calldata reason) external onlyOwner {
+        _checkReason(reason);
         sessions[who].active = false;
         if (who == agent) agent = address(0);
-        emit SessionRevoked(who);
+        emit SessionRevoked(who, reason);
     }
 
-    function setPayeeAllowed(address payee, bool allowed) external onlyOwner {
-        if (payee == address(0)) revert ZeroAddress();
-        isAllowedPayee[payee] = allowed;
-        emit PayeeAllowed(payee, allowed);
+    function setPayeeAllowed(address payee, bool allowed, string calldata reason) external onlyOwner {
+        _checkReason(reason);
+        _setAllowed(payee, allowed, reason);
     }
 
     /// @notice A blocked payee is never paid, not even by owner approval.
-    function setPayeeBlocked(address payee, bool blocked) external onlyOwner {
-        isBlockedPayee[payee] = blocked;
-        emit PayeeBlocked(payee, blocked);
+    function setPayeeBlocked(address payee, bool blocked, string calldata reason) external onlyOwner {
+        _checkReason(reason);
+        _setBlocked(payee, blocked, reason);
     }
 
-    function setCashBuffer(uint256 amount) external onlyOwner {
-        emit PolicyChanged("cashBuffer", cashBuffer, amount);
+    /// @notice Approves (or removes) up to MAX_BATCH payees in one signature.
+    function setPayeesAllowed(address[] calldata payees, bool allowed, string calldata reason) external onlyOwner {
+        _checkReason(reason);
+        if (payees.length == 0 || payees.length > MAX_BATCH) revert InvalidBill();
+        for (uint256 i; i < payees.length; ++i) _setAllowed(payees[i], allowed, reason);
+    }
+
+    /// @notice Blocks (or unblocks) up to MAX_BATCH addresses in one signature.
+    function setPayeesBlocked(address[] calldata payees, bool blocked, string calldata reason) external onlyOwner {
+        _checkReason(reason);
+        if (payees.length == 0 || payees.length > MAX_BATCH) revert InvalidBill();
+        for (uint256 i; i < payees.length; ++i) _setBlocked(payees[i], blocked, reason);
+    }
+
+    function _setAllowed(address payee, bool allowed, string calldata reason) internal {
+        if (payee == address(0)) revert ZeroAddress();
+        isAllowedPayee[payee] = allowed;
+        emit PayeeAllowed(payee, allowed, reason);
+    }
+
+    function _setBlocked(address payee, bool blocked, string calldata reason) internal {
+        if (payee == address(0)) revert ZeroAddress();
+        isBlockedPayee[payee] = blocked;
+        emit PayeeBlocked(payee, blocked, reason);
+    }
+
+    function setCashBuffer(uint256 amount, string calldata reason) external onlyOwner {
+        _checkReason(reason);
+        emit PolicyChanged("cashBuffer", cashBuffer, amount, reason);
         cashBuffer = amount;
     }
 
-    function setApprovalThreshold(uint256 amount) external onlyOwner {
-        emit PolicyChanged("approvalThreshold", approvalThreshold, amount);
+    function setApprovalThreshold(uint256 amount, string calldata reason) external onlyOwner {
+        _checkReason(reason);
+        emit PolicyChanged("approvalThreshold", approvalThreshold, amount, reason);
         approvalThreshold = amount;
     }
 
@@ -246,10 +279,11 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
         emit BillAdded(billId, payee, amount, firstDue, intervalDays, critical, label);
     }
 
-    function cancelBill(uint256 billId) external onlyOwner {
+    function cancelBill(uint256 billId, string calldata reason) external onlyOwner {
+        _checkReason(reason);
         if (billId >= _bills.length) revert InvalidBill();
         _bills[billId].active = false;
-        emit BillCancelled(billId);
+        emit BillCancelled(billId, reason);
     }
 
     /// @notice Lets a rejected bill period be proposed again.
@@ -380,6 +414,10 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     }
 
     // ============================================================= internal
+
+    function _checkReason(string calldata reason) internal pure {
+        if (bytes(reason).length > MAX_NOTE) revert TooLong();
+    }
 
     function _recordSpend(address who, uint128 amount) internal {
         uint256 head = _spendHead[who];

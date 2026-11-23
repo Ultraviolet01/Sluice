@@ -49,16 +49,16 @@ async function main() {
   const A = vault.connect(agent);
   const far = 9_999_999_999n;
   console.log(`Vault ${demo.vault} on ${network.name}\nAgent ${agent.address}\n\nWith the agent's key, try to change the rules`);
-  await refused("agent", "grant itself a bigger session", () => A.grantSession.staticCall(agent.address, usd(1e6), usd(1e6), far));
-  await refused("agent", "allowlist an address it controls", () => A.setPayeeAllowed.staticCall(agent.address, true));
-  await refused("agent", "unblock the scammer", () => A.setPayeeBlocked.staticCall(thief, false));
+  await refused("agent", "grant itself a bigger session", () => A.grantSession.staticCall(agent.address, usd(1e6), usd(1e6), far, "live check"));
+  await refused("agent", "allowlist an address it controls", () => A.setPayeeAllowed.staticCall(agent.address, true, "live check"));
+  await refused("agent", "unblock the scammer", () => A.setPayeeBlocked.staticCall(thief, false, "live check"));
   await refused("agent", "list a bill to itself", () => A.addBill.staticCall(agent.address, usd(1000), 1, 0, false, "x"));
   await refused("agent", "bulk-list bills to itself", () => A.addBills.staticCall([{ payee: agent.address, amount: usd(1000), firstDue: 1, intervalDays: 0, critical: true, label: "x" }]));
-  await refused("agent", "lower the cash buffer", () => A.setCashBuffer.staticCall(0));
-  await refused("agent", "raise the approval threshold", () => A.setApprovalThreshold.staticCall(usd(1e6)));
+  await refused("agent", "lower the cash buffer", () => A.setCashBuffer.staticCall(0, "live check"));
+  await refused("agent", "raise the approval threshold", () => A.setApprovalThreshold.staticCall(usd(1e6), "live check"));
   await refused("agent", "withdraw the vault", () => A.withdraw.staticCall(agent.address, 1));
   await refused("agent", "take ownership", () => A.transferOwnership.staticCall(agent.address));
-  await refused("agent", "cancel a bill", () => A.cancelBill.staticCall(0));
+  await refused("agent", "cancel a bill", () => A.cancelBill.staticCall(0, "live check"));
 
   console.log("\nWith the agent's key, try to move money outside the bills");
   await refused("agent", "pay a bill nobody listed", () => A.pay.staticCall(99, 0));
@@ -86,9 +86,9 @@ async function main() {
   await allowed("owner", "resume", () => vault.connect(owner).unpause());
   const rotated = ethers.Wallet.createRandom().address;
   const now = (await ethers.provider.getBlock("latest")).timestamp;
-  await allowed("owner", "rotate the agent key to a new address", () => vault.connect(owner).grantSession(rotated, usd(3), usd(6), now + 86400));
+  await allowed("owner", "rotate the agent key to a new address", () => vault.connect(owner).grantSession(rotated, usd(3), usd(6), now + 86400, "live check"));
   await refused("agent", "act with the rotated-out key", () => A.propose.staticCall(2, 0, "x"));
-  await allowed("owner", "rotate back to the agent", () => vault.connect(owner).grantSession(agent.address, usd(3), usd(6), now + 30 * 86400));
+  await allowed("owner", "rotate back to the agent", () => vault.connect(owner).grantSession(agent.address, usd(3), usd(6), now + 30 * 86400, "live check"));
 
   console.log("\nAn outsider");
   await refused("outsider", "pay a listed bill", () => vault.connect(outsider).pay.staticCall(2, 0));

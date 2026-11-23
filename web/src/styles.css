@@ -204,3 +204,14 @@ button { font: inherit; cursor: pointer; }
 .link-btn { background: none; border: 0; padding: 4px 0 0; color: var(--accent-sluice); font-weight: 500; text-align: left; }
 .link-btn:hover { text-decoration: underline; }
 .company-select { margin-top: 6px; font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-canvas); color: var(--text-primary); }
+.import-drops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+@media (max-width: 600px) { .import-drops { grid-template-columns: 1fr; } }
+.gs { display: flex; flex-direction: column; gap: 14px; border-color: var(--accent-sluice); }
+.gs-bar { width: 160px; height: 6px; background: var(--bg-subtle); border-radius: 3px; overflow: hidden; }
+.gs-bar > div { height: 100%; background: var(--accent-sluice); }
+.gs-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.gs-steps li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border-default); }
+.gs-steps li.done .t14 { color: var(--text-tertiary); text-decoration: line-through; }
+.gs-dot { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border-strong); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; flex-shrink: 0; }
+.gs-steps li.done .gs-dot { background: var(--status-success); border-color: var(--status-success); }
+@media (max-width: 700px) { .gs-bar { display: none; } .gs-steps li { flex-wrap: wrap; } }

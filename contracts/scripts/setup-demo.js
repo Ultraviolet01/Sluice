@@ -55,11 +55,11 @@ async function main() {
 
   const now = (await ethers.provider.getBlock("latest")).timestamp;
   console.log("Rules, payees and bills");
-  await step("grant the agent a 30-day session: 3 per payment, 6 per 24 h", vault.grantSession(agent, usd(3), usd(6), now + 30 * 86400));
-  await step("approve Northwind Hosting", vault.setPayeeAllowed(payees["Northwind Hosting"], true));
-  await step("approve Atlas Freight", vault.setPayeeAllowed(payees["Atlas Freight"], true));
-  await step("approve Contractor payroll", vault.setPayeeAllowed(payees["Contractor payroll"], true));
-  await step("block the scammer", vault.setPayeeBlocked(payees["Scammer (new bank details)"], true));
+  await step("grant the agent a 30-day session: 3 per payment, 6 per 24 h", vault.grantSession(agent, usd(3), usd(6), now + 30 * 86400, "demo company setup"));
+  await step("approve Northwind Hosting", vault.setPayeeAllowed(payees["Northwind Hosting"], true, "demo company setup"));
+  await step("approve Atlas Freight", vault.setPayeeAllowed(payees["Atlas Freight"], true, "demo company setup"));
+  await step("approve Contractor payroll", vault.setPayeeAllowed(payees["Contractor payroll"], true, "demo company setup"));
+  await step("block the scammer", vault.setPayeeBlocked(payees["Scammer (new bank details)"], true, "demo company setup"));
   await step(
     "list the five demo bills in one signature",
     vault.addBills([

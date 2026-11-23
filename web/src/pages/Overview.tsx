@@ -3,6 +3,7 @@ import { PageHead, Pill, Search } from "../components.tsx";
 import { dayLabel, fmt, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
 import { BillForm } from "./BillForm.tsx";
+import { GetStarted } from "./Panels.tsx";
 import legendWith from "../assets/icons/legend-with.svg";
 import legendBuffer from "../assets/icons/legend-buffer.svg";
 import loadline from "../assets/icons/loadline.svg";
@@ -18,7 +19,7 @@ function ForecastChart({ m }: { m: Model }) {
   const y = (v: number) => H - 10 - ((v - min) / (max - min)) * (H - 20);
   const x = (i: number) => PADL + (i / Math.max(1, pts.length - 1)) * (W - PADL - 4);
   const path = pts.map((v, i) => `${i ? "H" + x(i) + " V" : "M" + x(i) + " "}${y(v)}`).join(" ");
-  const short = m.forecast.findIndex((d) => d.balance < m.cashBuffer);
+  const short = m.upcoming.length ? m.forecast.findIndex((d) => d.balance < m.cashBuffer) : -1;
   return (
     <div className="ov-chart">
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="plot" role="img" aria-label="Balance forecast for the next 14 days">
@@ -42,7 +43,8 @@ export default function Overview() {
   const [adding, setAdding] = useState(false);
   if (!m) return null;
   const waiting = m.approvals.filter((a) => a.status === "waiting");
-  const short = m.forecast.find((d) => d.balance < m.cashBuffer);
+  // A shortfall is only real when listed bills cause it: an empty new vault is "unfunded", not "short".
+  const short = m.upcoming.length ? m.forecast.find((d) => d.balance < m.cashBuffer) : undefined;
   const s = m.session;
   const dueOut = m.upcoming.reduce((t, x) => t + x.amount, 0n);
   const allowed = m.payees.filter((p) => p.allowed && !p.blocked).length;
@@ -58,6 +60,7 @@ export default function Overview() {
         <button className="btn btn-primary" onClick={() => setAdding(true)}>New bill</button>
       </PageHead>
       {adding && <BillForm onClose={() => setAdding(false)} />}
+      <GetStarted />
 
       <div className="ov-hero">
         <section className="card ov-forecast">

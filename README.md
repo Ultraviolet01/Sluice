@@ -32,7 +32,7 @@ flowchart LR
 
 A bill that would break the cash buffer but isn't due yet is held until it is: money may come in first. Bills marked **critical** (payroll, rent) are paid first and never held. Each proposal's reason is written in plain English by Claude Haiku 5.5 from the agent's own facts.
 
-Anyone can **create their company's vault** from the dashboard in one signature (`SluiceFactory`), and **import** up to 50 bills at once from a CSV.
+Anyone can **create their company's vault** from the dashboard in one signature (`SluiceFactory`), **import** up to 50 bills at once from a CSV or from several invoices, approve many payees in one signature, and **deposit** from the dashboard. A **Get started** checklist walks a new company through funding, payees, bills and hiring the agent.
 
 ## Guardrails (enforced on-chain)
 
@@ -46,9 +46,9 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 | Human approval | Bills outside the limits are proposed with a note and wait for `approve` or `reject` |
 | Cash buffer | No agent payment may drop the vault below `cashBuffer` |
 | Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
-| Receipts | `BillPaid`, `PaymentProposed`, `PaymentRejected`, and `PolicyChanged` with old and new values |
+| Receipts and reasons | `BillPaid`, `PaymentProposed`, `PaymentRejected`; every rule change (`PolicyChanged`, payees, sessions, cancelled bills) is logged with the owner's reason |
 
-22 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
+24 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Check it
 
@@ -58,7 +58,7 @@ You need Node.js 22.
 npm run verify
 ```
 
-One line per check, ending `VERIFY PASSED: 6 passed, 0 failed`: 46 contract tests (vault, factory and the attack suite), the agent's typecheck and 32 tests, the web tests (invoice reader and bill import), and the web build.
+One line per check, ending `VERIFY PASSED: 6 passed, 0 failed`: 54 contract tests (vault, factory, the attack suite and randomised runs), the agent's typecheck and 42 tests (including 2,000-case randomised checks), the web tests, and the web build.
 
 ### See the agent work, locally
 

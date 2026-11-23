@@ -53,6 +53,8 @@ export interface Model {
   live: boolean;
   name: string;
   vault: Address;
+  /** The stablecoin the vault holds (tUSD8 on Aevum). */
+  token: Address;
   owner: Address | null;
   paused: boolean;
   balance: bigint;
@@ -69,10 +71,14 @@ export interface Model {
 
 const STATUS = { None: 0, Pending: 1, Paid: 2, Rejected: 3 };
 
+/** The owner's reason for a rule change, or the function name when none was given. */
+const why = (reason: unknown, fallback: string) => (typeof reason === "string" && reason.trim() ? `“${reason.trim()}”` : fallback);
+
 export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   const read = <T,>(functionName: string, args: unknown[] = []) =>
     publicClient.readContract({ address: vault, abi: VAULT_ABI, functionName: functionName as never, args: args as never }) as Promise<T>;
-  const [owner, paused, balance, cashBuffer, threshold, count, block] = await Promise.all([
+  const [token, owner, paused, balance, cashBuffer, threshold, count, block] = await Promise.all([
+    read<Address>("token"),
     read<Address>("owner"), read<boolean>("paused"), read<bigint>("balance"), read<bigint>("cashBuffer"),
     read<bigint>("approvalThreshold"), read<bigint>("billCount"), publicClient.getBlock(),
   ]);
@@ -151,13 +157,20 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
       activity.push({ at: e.at, what: `Rejected ${label(Number(a.billId))}`, amount: null, sign: "none", kind: "blocked", outcome: "Rejected", rule: "Rejected by you", tx: e.tx, type: "blocked" });
     } else if (e.name === "PolicyChanged") {
       const field = hexToString(a.field as `0x${string}`, { size: 32 }).replace(/\0/g, "");
-      activity.push({ at: e.at, what: `${field === "cashBuffer" ? "Cash buffer" : "Approval threshold"} ${fmt(a.oldValue as bigint)} → ${fmt(a.newValue as bigint)}`, amount: null, sign: "none", kind: "settled", outcome: "Signed by you", rule: field, tx: e.tx, type: "rules" });
+      activity.push({ at: e.at, what: `${field === "cashBuffer" ? "Cash buffer" : "Approval threshold"} ${fmt(a.oldValue as bigint)} → ${fmt(a.newValue as bigint)}`, amount: null, sign: "none", kind: "settled", outcome: "Signed by you", rule: why(a.reason, field), tx: e.tx, type: "rules" });
     } else if (e.name === "BillAdded") {
       activity.push({ at: e.at, what: `Listed bill: ${a.label}`, amount: a.amount as bigint, sign: "none", kind: "neutral", outcome: "Listed", rule: "Listed by you", tx: e.tx, type: "rules" });
     } else if (e.name === "SessionGranted") {
-      activity.push({ at: e.at, what: `Agent session: ${fmt(a.perPaymentCap as bigint)} per payment, ${fmt(a.dailyCap as bigint)} per 24 h`, amount: null, sign: "none", kind: "settled", outcome: "Signed by you", rule: "grantSession", tx: e.tx, type: "rules" });
+      activity.push({ at: e.at, what: `Agent session: ${fmt(a.perPaymentCap as bigint)} per payment, ${fmt(a.dailyCap as bigint)} per 24 h`, amount: null, sign: "none", kind: "settled", outcome: "Signed by you", rule: why(a.reason, "grantSession"), tx: e.tx, type: "rules" });
     } else if (e.name === "SessionRevoked") {
-      activity.push({ at: e.at, what: "Agent session revoked", amount: null, sign: "none", kind: "blocked", outcome: "Signed by you", rule: "revokeSession", tx: e.tx, type: "rules" });
+      activity.push({ at: e.at, what: "Agent session revoked", amount: null, sign: "none", kind: "blocked", outcome: "Signed by you", rule: why(a.reason, "revokeSession"), tx: e.tx, type: "rules" });
+    } else if (e.name === "PayeeAllowed" || e.name === "PayeeBlocked") {
+      const on = Boolean(e.name === "PayeeAllowed" ? a.allowed : a.blocked);
+      const who = bills.find((b) => b.payee.toLowerCase() === String(a.payee).toLowerCase())?.label || `${String(a.payee).slice(0, 8)}…`;
+      const what = e.name === "PayeeAllowed" ? (on ? `Approved payee ${who}` : `Removed ${who} from approved payees`) : on ? `Blocked ${who}` : `Unblocked ${who}`;
+      activity.push({ at: e.at, what, amount: null, sign: "none", kind: e.name === "PayeeBlocked" && on ? "blocked" : "settled", outcome: "Signed by you", rule: why(a.reason, e.name === "PayeeAllowed" ? "setPayeeAllowed" : "setPayeeBlocked"), tx: e.tx, type: "rules" });
+    } else if (e.name === "BillCancelled") {
+      activity.push({ at: e.at, what: `Cancelled bill: ${label(Number(a.billId))}`, amount: null, sign: "none", kind: "neutral", outcome: "Signed by you", rule: why(a.reason, "cancelBill"), tx: e.tx, type: "rules" });
     } else if (e.name === "Paused" || e.name === "Unpaused") {
       activity.push({ at: e.at, what: e.name === "Paused" ? "All payments paused" : "Payments resumed", amount: null, sign: "none", kind: e.name === "Paused" ? "blocked" : "settled", outcome: "Signed by you", rule: e.name === "Paused" ? "pause" : "unpause", tx: e.tx, type: "rules" });
     } else if (e.name === "Withdrawn") {
@@ -201,7 +214,7 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   return {
     live: true,
     name: (await companyName(vault)) || import.meta.env.VITE_COMPANY_NAME || "Your company",
-    vault, owner, paused, balance, cashBuffer, threshold, session, bills, upcoming, forecast,
+    vault, token, owner, paused, balance, cashBuffer, threshold, session, bills, upcoming, forecast,
     approvals: [...latest.values()].sort((a, b) => b.createdAt - a.createdAt),
     activity,
     payees: [...payees.values()],

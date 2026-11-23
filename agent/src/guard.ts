@@ -20,7 +20,9 @@ const LEET: Record<string, string> = { "0": "o", "1": "i", "3": "e", "4": "a", "
 
 /** Lower-cased, lookalikes folded, leetspeak undone, separators inside words removed. */
 export function normalise(s: string): string {
-  const folded = [...clean(s).normalize("NFKC").toLowerCase()].map((c) => FOLD[c] ?? c).join("");
+  // Invisible characters are deleted, not turned into spaces, so "dis\u200bregard" reads "disregard".
+  const visible = s.replace(/[\u00ad\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "");
+  const folded = [...clean(visible).normalize("NFKC").toLowerCase()].map((c) => FOLD[c] ?? c).join("");
   // "i.g.n.o.r.e" / "i-g-n-o-r-e" -> "ignore"
   const joined = folded.replace(/\b(?:\w[._\-*·]){2,}\w\b/g, (m) => m.replace(/[._\-*·]/g, ""));
   return joined.replace(/[013457@$]/g, (c) => LEET[c] ?? c);
