@@ -6,7 +6,7 @@ Small and mid-size companies have no treasury team. Bills are paid by hand, cash
 
 Sluice keeps the money in the company's own vault on **QDay Aevum** and lets the agent settle only the bills the owner listed: that payee, that amount, that schedule. Anything outside the owner's limits waits for the owner. The rules live in the contract, so they hold even if the agent's model is fooled or its key is stolen.
 
-**Live:** https://usesluice.vercel.app · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot)
+**Live:** https://usesluice.vercel.app · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot) · **Proof on chain:** [docs/VERIFIED.md](docs/VERIFIED.md) (every contract function used live on Aevum, with explorer links)
 
 Built for **Aevum Builder Challenge #1** · tracks: Native AI Assistants, Invoice Payments.
 
@@ -84,7 +84,7 @@ You see Northwind paid alone, Atlas proposed (over the cap), Figma proposed (new
 
 ### On Aevum Testnet
 
-After deploying: `npm run demo:setup`, `npm run attacks` and `npm run flood` in `contracts/` (each with `-- --network aevumTestnet`) set up the demo company and run the stolen-key checks against it; `npm run agent:new-key`, `agent:fund` and `agent:rotate` create, fund and rotate the agent's key; `npm run demo` in `agent/` tells one round step by step; `node scripts/verified.mjs` writes [docs/VERIFIED.md](docs/VERIFIED.md) from their records.
+After deploying: `npm run demo:setup`, `npm run functions`, `npm run attacks` and `npm run flood` in `contracts/` (each with `-- --network aevumTestnet`) set up the demo company and run the stolen-key checks against it; `npm run agent:new-key`, `agent:fund` and `agent:rotate` create, fund and rotate the agent's key; `npm run demo` in `agent/` tells one round step by step; `node scripts/verified.mjs` writes [docs/VERIFIED.md](docs/VERIFIED.md) from their records.
 
 ### The dashboard
 

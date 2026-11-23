@@ -1,0 +1,41 @@
+{
+  "network": "aevumTestnet",
+  "vault": "0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3",
+  "bills": 5,
+  "attempts": 101,
+  "accepted": 2,
+  "refused": {
+    "Refused(NotDueYet)": 39,
+    "Refused(BillCancelled)": 20,
+    "Refused(Blocklisted)": 1,
+    "Refused(BadPeriod)": 38
+  },
+  "filed": [
+    {
+      "bill": 0,
+      "period": 0,
+      "tx": "0xb6264340b0c5b1b012b9e89db24f5edfce20a6a637a39b5a7ac0e82a1ab09f5d"
+    },
+    {
+      "bill": 1,
+      "period": 0,
+      "tx": "0x16123e01a8b17e289b1a025c8256df03d00357624e9f583926fa4dadf0d4fae4"
+    }
+  ],
+  "ownerChecks": [
+    {
+      "what": "owner pauses",
+      "tx": "0x5f420ff1e27a4d3770c89698661ca74407e02f2be7a7af60bfb5a8240937ddeb"
+    },
+    {
+      "what": "owner resumes",
+      "tx": "0x12b61dae801a92631a5fecf81eff703d76955b5919a3bc00a1d59ce4fa20c2bd"
+    },
+    {
+      "what": "owner rejects bill 0 period 0",
+      "tx": "0xe1504a3b33270ab10b60fa6e258e68df577a12e3228b0c9fe4134928b6047130"
+    }
+  ],
+  "bounded": true,
+  "at": "2026-11-23T12:04:01.957Z"
+}

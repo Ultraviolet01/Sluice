@@ -1,0 +1,454 @@
+{
+  "network": "aevumTestnet",
+  "factory": "0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9",
+  "vault": "0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3",
+  "owner": "0xdE68a9391600B77E1337aeDd7ECFB86494eC7698",
+  "agent": "0x2ea4bf1d859918adf150F032F7E0C233f5498d3A",
+  "guardian": "0xc0940c4BAd322FBB09CB27ca0442e96f11C3AC29",
+  "rows": [
+    {
+      "fn": "createVault",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x32e651b581075727bb1f926fff1bcf9346b9abb96aade1dee2a1a37fd2989750",
+      "ok": true,
+      "check": "new company 0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3, owned by the caller"
+    },
+    {
+      "fn": "vaultCount",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "2 -> 3"
+    },
+    {
+      "fn": "vaultAt",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3"
+    },
+    {
+      "fn": "nameOf",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "Function check 2026-11-23T12:00"
+    },
+    {
+      "fn": "vaultsCreatedBy",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "includes 0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3"
+    },
+    {
+      "fn": "setCashBuffer",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x993863e69cdd9486689ed7c1c3ab913c33379790415e5f849b4dcde6b159e9d0",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setApprovalThreshold",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x82beba21ca13ab3d5e41f7a8ce3e8871cbfc6763ba42243003e218b7de78141e",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setPayeeAllowed",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xaafbed055d72a87cadf7627b8a9585d97ee1f31c43d3555a69cff7df1234de54",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setPayeesAllowed",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x1e5271f4f60fb475dbdc71c3ef908821de21fefb0af35699ae708eb1350d4b29",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setPayeeBlocked",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xfc74ae4c7a6e23ff5edf8cf0a25e833bf50933a0d57f1c6d656313f3c2e326f7",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setPayeesBlocked",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xbdf2b670f994312a0ad128bb1eeca04cdb4bc7513a53d071df2e43d4741f7955",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setPayeesBlocked",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x7453d59d59a63e694550c863f31251c2101315eab304871462e24248e8795263",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "grantSession",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xcda299519c7d84c74ce0bb80a678723497590369d91798488d39602c15d9c50f",
+      "ok": true,
+      "check": "agent may pay 1 per payment, 2 per 24 h, for 7 days"
+    },
+    {
+      "fn": "setCashBuffer",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)"
+    },
+    {
+      "fn": "grantSession",
+      "who": "outsider",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0xB095731d4815Aa8fb0ec1CE524b4155c04cC88A5)"
+    },
+    {
+      "fn": "addBill",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x09f240e0632f4bb9cc674865c8b44fb13f2fd73a73ccd82434ffa9aafdbc6375",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "addBills",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xe287bf0f0c98028089b98e9be31af32122126df34cda03796607d61b67e00cc6",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "billCount",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "5"
+    },
+    {
+      "fn": "getBill",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "bill 0: Hosting, monthly, 0.5 tUSD8 to 0x7e3b510C…, every 30 days"
+    },
+    {
+      "fn": "dueAt",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "bill 0 period 1 due 2026-12-23 (30 days after period 0)"
+    },
+    {
+      "fn": "checkPayment",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "bill 0 (the vault is empty, so even this would break the cash buffer): NeedsApproval, reason 15"
+    },
+    {
+      "fn": "checkPayment",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "bill 1 (over the per-payment cap): NeedsApproval, reason 12"
+    },
+    {
+      "fn": "checkPayment",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "bill 3 (payee not on the approved list): NeedsApproval, reason 11"
+    },
+    {
+      "fn": "checkPayment",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "bill 4 (payee is blocked): Blocked, reason 10"
+    },
+    {
+      "fn": "checkPayment",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "bill 2 (not due yet): Blocked, reason 7"
+    },
+    {
+      "fn": "balance",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "0.0 tUSD8 in the vault"
+    },
+    {
+      "fn": "spentInWindow",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "0.0 tUSD8 spent by the agent in 24 h"
+    },
+    {
+      "fn": "remainingDailyBudget",
+      "who": "anyone",
+      "kind": "view",
+      "ok": true,
+      "check": "2.0 tUSD8 left today"
+    },
+    {
+      "fn": "pay",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: NotAgentPayable(BelowCashBuffer)"
+    },
+    {
+      "fn": "propose",
+      "who": "agent",
+      "kind": "tx",
+      "tx": "0xabb72a6135ff4a150605c8ad0a42956ae31726280dff302b9cbaf47be295d107",
+      "ok": true,
+      "check": "PaymentProposed emitted for bill 1 period 0"
+    },
+    {
+      "fn": "propose",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: Refused(AlreadyProposed)"
+    },
+    {
+      "fn": "approve",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)"
+    },
+    {
+      "fn": "approve",
+      "who": "owner",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: InsufficientFunds(0, 3000000)"
+    },
+    {
+      "fn": "reject",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x1838636d9c9c2774f906e20e0c956ddc5ec384d3b96aa1bfe018bcfd3c7d6be6",
+      "ok": true,
+      "check": "PaymentRejected; the period is closed"
+    },
+    {
+      "fn": "propose",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: Refused(AlreadySettled)"
+    },
+    {
+      "fn": "releaseBill",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x3a653676c0d3be265eb5626766c77ab1a82af78ff531aa8bdf24e3894edb2f08",
+      "ok": true,
+      "check": "BillReleased; the period may be filed again"
+    },
+    {
+      "fn": "propose",
+      "who": "agent",
+      "kind": "tx",
+      "tx": "0x252945d4cc22ea43934e6b1f44af83407a7f5ca84a059e4af9954004c19c526e",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "cancelBill",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x9df51b85b1e12352904e127bc74451c214dce5854c436016b1b1cbdf602da906",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setGuardian",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x4ad6fa0c08b63fc5ae6c6255e45404a78608c7a86f29c26b8ff33d5f94f9a37b",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setNotifyChat",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x1f60934b80d3de923e9e4471644fb4745faaf377b2a20ab9b409c2cf76111024",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "guardianBlock",
+      "who": "guardian",
+      "kind": "tx",
+      "tx": "0xb55d6979b49842a497f2d016bbe24256a81c4fc7f148fffd7aec22c7699f04e6",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "reject",
+      "who": "guardian",
+      "kind": "tx",
+      "tx": "0xde06d23b768b158c20c4c4ebd15a7b6b94fd1a6f164ecbab4accb29864225d0d",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "pause",
+      "who": "guardian",
+      "kind": "tx",
+      "tx": "0xf8c57ca6898bda9e5458d784302e305034fbee2f0f3f0c6a94c5e0860b2e415d",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "unpause",
+      "who": "guardian",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0xc0940c4BAd322FBB09CB27ca0442e96f11C3AC29)"
+    },
+    {
+      "fn": "setPayeeAllowed",
+      "who": "guardian",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0xc0940c4BAd322FBB09CB27ca0442e96f11C3AC29)"
+    },
+    {
+      "fn": "withdraw",
+      "who": "guardian",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0xc0940c4BAd322FBB09CB27ca0442e96f11C3AC29)"
+    },
+    {
+      "fn": "propose",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: Refused(Paused)"
+    },
+    {
+      "fn": "unpause",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x951bb2d8d28d33ccee7bb5fb13648c3f3d02c0d30a3546560421fdacc89191cf",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "pause",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x30071068628b9a2650de6fc21e1b34601dfca0ffbeb6b3b12e079fd85fa73beb",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "unpause",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x654b541d565f5f69b7997cca5dcba862da164489ee716023963fb3158156a8bf",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "setGuardian",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xc2bf0ccbe4f201a774dc31aa8fb147c1b4cfe052c7796aeac1ff80e26409da34",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "pause",
+      "who": "guardian",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: NotOwnerOrGuardian()"
+    },
+    {
+      "fn": "pay / withdraw / approve",
+      "who": "—",
+      "kind": "skipped",
+      "ok": true,
+      "check": "skipped here: no tUSD8 to move (0.0 tUSD8 in the vault). A real agent payment is recorded on the demo company"
+    },
+    {
+      "fn": "withdraw",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)"
+    },
+    {
+      "fn": "revokeSession",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x00cd9ab1b7604ffe97d480d4653baf74767344ebd895866bc55ef2a69e7f4059",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "propose",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: Refused(NoSession)"
+    },
+    {
+      "fn": "transferOwnership",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x3e085796bbb673343c95db8c47c5986d692b6621015bb690b2c99a7a38efcb19",
+      "ok": true,
+      "check": "state checked"
+    },
+    {
+      "fn": "acceptOwnership",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "refused: OwnableUnauthorizedAccount(0x2ea4bf1d859918adf150F032F7E0C233f5498d3A)"
+    },
+    {
+      "fn": "transferOwnership(0)",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x9f8ed75fba77f853516e336d7d3b594a26f5ad8fee72a8f5566f5832a5e65d0a",
+      "ok": true,
+      "check": "offer cancelled; the owner is unchanged"
+    }
+  ],
+  "passed": 59,
+  "failed": 0,
+  "at": "2026-11-23T12:02:48.859Z"
+}

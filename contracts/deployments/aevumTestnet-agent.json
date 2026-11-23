@@ -1,0 +1,10 @@
+{
+  "network": "aevumTestnet",
+  "vault": "0x4cd19a15A37Dc241938b9B0Bee67E007556554ce",
+  "rounds": [
+    { "where": "first round, run by hand", "what": "paid Northwind Hosting, 1.00 tUSD8, alone (inside every limit)", "tx": "0x48003b9e0b7145f44e629a5f0a6a314c05b9287fa2db10ac5de8de10ec59841f" },
+    { "where": "first round, run by hand", "what": "proposed Atlas Freight, 4.00 tUSD8, to the owner (over the 3 tUSD8 cap)", "tx": "0xccd67a7c24aa07d559e244a0a8089f31ce24ee10ffef88d9e2c33fb40bd05169" },
+    { "where": "first round, run by hand", "what": "proposed Figma, 0.50 tUSD8, to the owner (payee not approved)", "tx": "0x784143e5a323d62d1bffd7055c7dc81517bc3257f98894b2f492a4ce261bd96d" },
+    { "where": "GitHub Actions, scheduled workflow", "what": "found the company through the factory, paid nothing twice, refused the blocklisted bill, warned of a shortfall", "run": "https://github.com/Ultraviolet01/Sluice/actions/runs/45167004111" }
+  ]
+}

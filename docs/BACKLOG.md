@@ -17,7 +17,7 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 | 6 | Demo company on testnet | **Script ready**: `cd contracts && npm run demo:setup -- --network aevumTestnet` creates it through the factory: payees, the five demo bills, the agent's session, 5 tUSD8 (1 tUSD8 buffer) | 5 tUSD8 in the deploy wallet (there now) |
 | 7 | Live attack run | **Script ready**: `npm run attacks -- --network aevumTestnet`: 30 checks against the demo company, refusals plus real allowed transactions (30/30 locally) | Agent key with a little tQDAY |
 | 8 | Proposal flood check | **Script ready**: `npm run flood -- --network aevumTestnet` (locally: 1 accepted, 200 refused, owner unaffected) | — |
-| 9 | `docs/VERIFIED.md` | **Generator ready**: `node scripts/verified.mjs` writes it from the records of steps 1, 6, 7 and 8, with explorer links. Add by hand: an Actions run log, a Telegram alert, a dashboard sign-up | — |
+| 9 | `docs/VERIFIED.md` | **Written** (every function live, the agent, attacks, flood). Generator: `node scripts/verified.mjs` writes it from the records of steps 1, 6, 7 and 8, with explorer links. Add by hand: an Actions run log, a Telegram alert, a dashboard sign-up | — |
 | 10 | Narrated demo | **Script ready**: `cd agent && npm run demo` tells one round step by step on the demo company (`-- --dry-run` signs nothing) | Agent key |
 | 11 | Key scripts | **Done**: `agent:new-key`, `agent:fund`, and `agent:rotate` (hires the new key on every vault you own, keeping each vault's caps; the old key stops in the same transaction; `DRY_RUN=1` shows the plan). Tested locally | — |
 | 12 | Demo video | Record with `docs/DEMO.md`; link it without a login | Recording |
