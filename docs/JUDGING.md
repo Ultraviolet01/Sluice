@@ -35,4 +35,5 @@ Criteria and weights from the Aevum Builder Challenge #1 starter guide.
 3. **Multisig owner**: a Safe as the vault's owner, so approvals take more than one signature.
 4. **Account abstraction**: gas paid in tUSD8 through an ERC-4337 paymaster, if Aevum runs a bundler.
 5. **Paying a payee on another chain** through the QDay Bridge, once its contracts and supported tokens are published (today it links QDay Origin testnet and Aevum testnet, with no public contract addresses). The bill would name the destination chain and the payee's address there; the vault's limits and the owner's approval still apply on Aevum before anything leaves, and the agent never chooses the chain or the address.
-6. **Audit** of the vault before any mainnet money.
+6. **Earn on idle cash** through QDay's lending protocol (QLEAP) once it is live on Aevum. Only money above the cash buffer and the next 14 days of bills would move, up to a cap the owner sets, and the agent pulls it back before bills come due. Today QLEAP is planned and no lending market accepts tUSD8 on Aevum Testnet.
+7. **Audit** of the vault before any mainnet money.

@@ -40,8 +40,8 @@ Everything not yet in Sluice, in the order we plan to do it. Updated as items la
 
 ## Roadmap to mainnet
 
-See [JUDGING.md](JUDGING.md#roadmap-to-mainnet): per-payee caps, paying payees on another chain through the QDay Bridge, Confirmation of Payee through an ERC-8004 registry, a Safe multisig owner, gas in tUSD8 through an ERC-4337 paymaster, an audit.
+See [JUDGING.md](JUDGING.md#roadmap-to-mainnet): per-payee caps, paying payees on another chain through the QDay Bridge, earning on idle cash through QLEAP, Confirmation of Payee through an ERC-8004 registry, a Safe multisig owner, gas in tUSD8 through an ERC-4337 paymaster, an audit.
 
 ## Not planned
 
-NEAR-only features with no Aevum equivalent: Rhea lending for idle cash, NEAR Intents and Chain Signatures, NEAR AI's TEE-attested answers, Sputnik DAO ownership.
+NEAR-only features with no Aevum equivalent yet: Rhea lending for idle cash (see the QLEAP roadmap item), NEAR Intents and Chain Signatures, NEAR AI's TEE-attested answers, Sputnik DAO ownership.
