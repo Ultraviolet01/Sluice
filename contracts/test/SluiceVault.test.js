@@ -135,9 +135,11 @@ describe("SluiceVault", () => {
       await expect(vault.approve(2, 0)).to.be.revertedWithCustomError(vault, "NotPending");
     });
 
-    it("a bill inside the limits cannot be proposed (the agent must pay it)", async () => {
+    it("the agent may choose caution: a bill inside its limits can be proposed instead of paid", async () => {
       const { vault, agent } = await loadFixture(deploy);
-      await expect(vault.connect(agent).propose(0, 0, "x")).to.be.revertedWithCustomError(vault, "NotAgentPayable").withArgs(R.Ok);
+      await expect(vault.connect(agent).propose(0, 0, "lookalike payee name"))
+        .to.emit(vault, "PaymentProposed").withArgs(0, 0, agent.address, usd(80), R.Ok, "lookalike payee name");
+      await expect(vault.connect(agent).pay(0, 0)).to.be.revertedWithCustomError(vault, "NotAgentPayable").withArgs(R.AlreadyProposed);
     });
 
     it("rejected periods stay closed until the owner releases them", async () => {

@@ -270,13 +270,13 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
         emit BillPaid(billId, period, b.payee, b.amount, msg.sender, false);
     }
 
-    /// @notice Files a bill period for the owner. Only bills outside the agent's
-    ///         limits can be proposed; refused ones (blocklist, unlisted, paid) cannot.
+    /// @notice Files a bill period for the owner. The agent may propose any bill it
+    ///         could pay (choosing caution, e.g. after a failed review) or that is
+    ///         outside its limits; refused ones (blocklist, unlisted, paid) cannot.
     function propose(uint256 billId, uint32 period, string calldata note) external {
         if (bytes(note).length > MAX_NOTE) revert TooLong();
         (Band band, Reason reason) = checkPayment(msg.sender, billId, period);
         if (band == Band.Blocked) revert Refused(reason);
-        if (band == Band.RunsAlone) revert NotAgentPayable(Reason.Ok); // pay it instead
         settlements[billId][period] = Proposal(Status.Pending, msg.sender, uint64(block.timestamp), reason, note);
         emit PaymentProposed(billId, period, msg.sender, _bills[billId].amount, reason, note);
     }

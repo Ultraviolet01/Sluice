@@ -1,0 +1,55 @@
+# Sluice agent
+
+Settles the bills the owner listed on a SluiceVault, inside the vault's limits, and proposes the rest to the owner. One round per run; GitHub Actions runs it every 15 minutes (`.github/workflows/agent.yml`). No database, no server: the vault's own records are the agent's memory, so a round can never pay a bill period twice.
+
+## A round
+
+| Step | What happens | Where |
+|---|---|---|
+| Observe | Balance, cash buffer, the agent's session and 24h spend, every bill, past receipts | `src/chain.ts` |
+| Forecast | The next 14 days, and the first day the balance would fall below the buffer | `forecast`, `firstShortfall` in `src/brain.ts` |
+| Decide | For each bill period that is due: ask the vault's `checkPayment`, then pay, propose, refuse or wait. A bill more than 25% above that payee's last three goes to the owner | `decide`, `isSpike` |
+| Review | Before paying alone: the injection guard, then Claude. Both can only make the decision stricter (pay → propose or refuse) | `src/guard.ts`, `src/review.ts` |
+| Act | `pay(billId, period)` or `propose(billId, period, note)`, simulated first, then sent | `src/loop.ts` |
+| Learn | After three rising owner approvals for one payee, drafts a higher cap. The owner decides | `draftCap` |
+
+The vault re-checks everything on chain; the agent can only ever be stricter than the vault.
+
+## Run it
+
+```bash
+npm install
+npm test
+```
+
+Against a vault (Aevum Testnet by default):
+
+```bash
+SLUICE_VAULTS=0xYourVault AGENT_PRIVATE_KEY=0x... npm run dry-run
+```
+
+`npm run dry-run` decides everything and signs nothing. `npm run agent` acts. Set `ANTHROPIC_API_KEY` to turn on the Claude review; without it the guard and the vault's rules still apply.
+
+### Local end-to-end
+
+```bash
+cd ../contracts && npx hardhat node
+# second terminal
+cd contracts && npx hardhat run scripts/local-demo.js --network localhost
+cd ../agent && SLUICE_LOCAL=1 AEVUM_RPC_URL=http://127.0.0.1:8545 SLUICE_VAULTS=<vault from above> AGENT_PRIVATE_KEY=<Hardhat account #1 key> npm run agent
+```
+
+The demo company has five bills: Northwind (paid alone), Atlas Q4 (over the cap, proposed), Figma (payee not approved, proposed), a "new bank details" bill to a blocklisted address (refused), and an Atlas bill due in 10 days (left for later).
+
+## Hosted schedule
+
+In the GitHub repository, **Settings → Secrets and variables → Actions**:
+
+| Kind | Name | Value |
+|---|---|---|
+| Secret | `AGENT_PRIVATE_KEY` | The agent's key. Give its address a session with `grantSession` on the vault |
+| Secret | `ANTHROPIC_API_KEY` | Optional, for the Claude review |
+| Variable | `SLUICE_VAULTS` | Comma-separated vault addresses |
+| Variable | `SLUICE_FROM_BLOCK` | Optional, the vault's deployment block |
+
+Until `SLUICE_VAULTS` and `AGENT_PRIVATE_KEY` are set, each scheduled run skips with a notice. Run it by hand from the **Actions** tab (`agent` → **Run workflow**), with **dry run** ticked to sign nothing. The agent's address needs a little tQDAY for gas.

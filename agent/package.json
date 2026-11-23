@@ -1,0 +1,23 @@
+{
+  "name": "sluice-agent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Sluice's agent: settles bills inside the vault's limits, proposes the rest",
+  "scripts": {
+    "agent": "tsx src/main.ts",
+    "dry-run": "tsx src/main.ts --dry-run",
+    "test": "tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "viem": "^2.21.54"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

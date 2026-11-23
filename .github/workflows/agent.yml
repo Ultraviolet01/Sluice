@@ -1,0 +1,57 @@
+# Sluice's agent on a schedule: one round over every vault every 15 minutes.
+# Each round pays bills that fit a vault's limits and proposes the rest. The
+# vaults themselves remember what was settled, so nothing is stored between runs.
+#
+# Settings > Secrets and variables > Actions:
+#   Secrets:   AGENT_PRIVATE_KEY  (required) the agent's session key, 0x...
+#              ANTHROPIC_API_KEY  (optional) turns on the Claude review
+#   Variables: SLUICE_VAULTS      (required) comma-separated vault addresses
+#              SLUICE_FROM_BLOCK  (optional) the vault's deployment block
+name: agent
+
+on:
+  schedule:
+    # Off the :00/:15/:30/:45 minutes, which GitHub often delays.
+    - cron: "4,19,34,49 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Decide but sign nothing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: sluice-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  round:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+      - run: npm ci
+      - name: Round
+        env:
+          AGENT_PRIVATE_KEY: ${{ secrets.AGENT_PRIVATE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLUICE_VAULTS: ${{ vars.SLUICE_VAULTS }}
+          SLUICE_FROM_BLOCK: ${{ vars.SLUICE_FROM_BLOCK }}
+          AEVUM_RPC_URL: https://rpc-test.qday.info
+        run: |
+          if [ -z "$SLUICE_VAULTS" ] || [ -z "$AGENT_PRIVATE_KEY" ]; then
+            echo "::notice::SLUICE_VAULTS or AGENT_PRIVATE_KEY not set yet; skipping this round."
+            exit 0
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then npx tsx src/main.ts --dry-run; else npx tsx src/main.ts; fi

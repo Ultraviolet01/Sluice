@@ -49,15 +49,15 @@ npm run deploy
 
 ## Repo layout
 - `contracts/` – `SluiceVault.sol`, tests, deploy script (Hardhat)
-- `agent/` – AI agent (coming)
+- `agent/` – the agent: observe, forecast, decide, Claude review (stricter only), act, learn. Runs every 15 minutes on GitHub Actions. See `agent/README.md`
 - `web/` – landing page + dashboard (Vite, React, TypeScript): Overview, Approvals, Activity, Rules, Wallets, Settings. Run: `cd web && npm install && npm run dev`
 
 ## Roadmap
-- Agent service: invoice parsing → proposed payment → `pay()` within limits
 - Dashboard: sessions, budgets, approval queue, receipts
 - Confirmation of Payee via ERC-8004 (if a registry is available on Aevum)
 
 ## Dependencies
+- viem (MIT), @anthropic-ai/sdk (MIT), tsx (MIT) for the agent
 - OpenZeppelin Contracts 5.1 (MIT)
 - Hardhat (MIT), ethers v6 (MIT), chai (MIT)
 
