@@ -2,7 +2,9 @@
 // GitHub Actions' job (.github/workflows/agent.yml), every 15 minutes.
 //
 // Environment:
-//   SLUICE_VAULTS        required, comma-separated vault addresses
+//   SLUICE_VAULTS        comma-separated vault addresses, and/or
+//   SLUICE_FACTORY       serve every vault the factory created whose agent is this key
+//   SLUICE_ROUND_SECONDS optional, time limit for the whole round (default 420)
 //   AGENT_PRIVATE_KEY    required, the agent's session key (0x...)
 //   AEVUM_RPC_URL        optional, default https://rpc-test.qday.info
 //   ANTHROPIC_API_KEY    optional, enables the Claude review
@@ -35,8 +37,11 @@ function need(name: string): string {
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
-  const vaults = need("SLUICE_VAULTS").split(",").map((s) => s.trim()).filter(Boolean);
-  for (const v of vaults) if (!isAddress(v)) throw new Error(`not an address: ${v}`);
+  const listed = (process.env.SLUICE_VAULTS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const factory = process.env.SLUICE_FACTORY?.trim();
+  if (!listed.length && !factory) need("SLUICE_VAULTS");
+  for (const v of [...listed, ...(factory ? [factory] : [])]) if (!isAddress(v)) throw new Error(`not an address: ${v}`);
+  const roundEnds = Date.now() + Number(process.env.SLUICE_ROUND_SECONDS || 420) * 1000;
   const key = need("AGENT_PRIVATE_KEY") as Hex;
   const chain = viemChain({
     rpcUrl: process.env.AEVUM_RPC_URL || "https://rpc-test.qday.info",
@@ -46,6 +51,12 @@ async function main() {
     chain: process.env.SLUICE_LOCAL === "1" ? (hardhat as unknown as typeof aevumTestnet) : aevumTestnet,
   });
   const reviewer = makeReviewer(process.env.ANTHROPIC_API_KEY);
+  const found = factory ? await chain.discover(factory as Address).catch((e) => {
+    console.error(`[error] reading the factory: ${(e as Error).message}`);
+    return [] as Address[];
+  }) : [];
+  const vaults = [...new Map([...listed, ...found].map((v) => [v.toLowerCase(), v])).values()];
+  if (factory) console.log(`Factory ${factory}: ${found.length} vault(s) gave this agent a live session`);
   console.log(`Sluice agent ${chain.agent}${dryRun ? " (dry run: signs nothing)" : ""}; Claude review ${process.env.ANTHROPIC_API_KEY ? "on" : "off"}`);
 
   const tg = process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID ? { token: process.env.TELEGRAM_BOT_TOKEN, chatId: process.env.TELEGRAM_CHAT_ID } : null;
@@ -57,6 +68,10 @@ async function main() {
   const summary: string[] = [];
   let failed = false;
   for (const vault of vaults as Address[]) {
+    if (Date.now() > roundEnds) {
+      console.log(`\n[round] time is up; ${vault} and later vaults wait for the next round`);
+      break;
+    }
     console.log(`\n== ${vault}`);
     summary.push(`### ${vault}`);
     const alerts: Alert[] = [];
@@ -66,6 +81,8 @@ async function main() {
         reviewer,
         explain: async (x) => (await explain(anthropicKey, x)).text,
         alert: (a) => alerts.push(a),
+        // Each vault gets at most 90 seconds, and none runs past the round's end.
+        deadline: Math.min(roundEnds, Date.now() + 90_000),
         say: (e: Event) => {
           const link = e.tx ? (EXPLORER ? ` ${EXPLORER}/tx/${e.tx}` : ` ${e.tx}`) : "";
           console.log(`[${e.step}] ${e.text}${link}`);

@@ -25,6 +25,7 @@ function fakeChain(bills: Bill[], extra: Partial<VaultView> = {}) {
   };
   const chain: Chain = {
     agent: "0x00000000000000000000000000000000000000ee",
+    discover: async () => [],
     now: async () => NOW,
     read: async () => view,
     status: async (_v, id, p) => status.get(`${id}:${p}`) ?? 0,
@@ -127,4 +128,11 @@ test("alerts: refused bills and a custom explainer note", async () => {
   await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null), explain: async () => "Custom note from the explainer.", alert: (a) => alerts.push(a) });
   assert.match(calls[0], /Custom note from the explainer/);
   assert.ok(alerts.some((a) => a.key === "refused:" + VAULT + ":0:0"));
+});
+
+test("past the deadline, no new bill is started", async () => {
+  const { chain, calls } = fakeChain([bill(0, OK, 80, "Northwind"), bill(1, OK, 90, "Hosting")]);
+  const events = await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null), deadline: Date.now() - 1 });
+  assert.equal(calls.length, 0);
+  assert.ok(events.some((e) => e.text.includes("round time is up")));
 });

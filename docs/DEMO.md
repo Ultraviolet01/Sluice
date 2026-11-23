@@ -22,7 +22,7 @@ For the finalists' live call and the recorded video. Everything below runs on Ae
 | 2:30 | Approvals page | What waits for the owner, why the vault sent it, and the five policy checks. Approve Atlas in MetaMask. |
 | 3:00 | Activity page | Every payment and rule change with its receipt on chain. |
 | 3:20 | Edge case: Settings → Revoke now, then run the agent again | With the session revoked, the agent can do nothing. The vault, not the agent, enforces it. |
-| 3:50 | `contracts/test/attacks.test.js` output | 21 attacks with a stolen agent key, all refused. |
+| 3:50 | `contracts/test/attacks.test.js` output | 22 attacks with a stolen agent key, all refused. |
 | 4:15 | Close | Aevum, tUSD8, a contract-enforced line, and an agent that can only be more careful than its rules. |
 
 ## If something fails live

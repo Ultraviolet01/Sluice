@@ -28,7 +28,9 @@ With no vault configured it shows demo data. To show a live vault on Aevum Testn
 |---|---|
 | `VITE_VAULT_ADDRESS` | The vault to show by default |
 | `VITE_FROM_BLOCK` | The vault's deployment block, so the app reads events from there |
-| `VITE_COMPANY_NAME` | The name in the sidebar |
+| `VITE_COMPANY_NAME` | The name in the sidebar (vaults made by the factory use their own name) |
+| `VITE_FACTORY_ADDRESS` | Turns on **Create a company** and the company switcher |
+| `VITE_AGENT_ADDRESS` | The hosted agent's address: filled in under Settings, and offered when a company is created |
 | `VITE_RPC_URL` | Optional; default `https://rpc-test.qday.info` |
 
 ## Invoice reading

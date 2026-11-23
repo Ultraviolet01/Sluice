@@ -28,6 +28,7 @@ export const VAULT_ABI = parseAbi([
   "function settlements(uint256, uint32) view returns (uint8 status, address agent, uint64 createdAt, uint8 reason, string note)",
   "function checkPayment(address, uint256, uint32) view returns (uint8, uint8)",
   "function isAllowedPayee(address) view returns (bool)",
+  "function agent() view returns (address)",
   "function pay(uint256 billId, uint32 period)",
   "function propose(uint256 billId, uint32 period, string note)",
 ]);
@@ -63,8 +64,15 @@ export interface VaultView {
   paid: Paid[];
 }
 
+export const FACTORY_ABI = parseAbi([
+  "function vaultCount() view returns (uint256)",
+  "function vaultAt(uint256) view returns (address)",
+]);
+
 export interface Chain {
   agent: Address;
+  /** Vaults from the factory whose current agent is this key, with a live session. */
+  discover(factory: Address): Promise<Address[]>;
   now(): Promise<number>;
   read(vault: Address): Promise<VaultView>;
   check(vault: Address, billId: number, period: number): Promise<{ band: Band; reason: Reason }>;
@@ -93,6 +101,19 @@ export function viemChain(opts: { rpcUrl: string; privateKey: Hex; fromBlock?: b
 
   return {
     agent: account.address,
+    async discover(factory) {
+      const n = Number(await pub.readContract({ address: factory, abi: FACTORY_ABI, functionName: "vaultCount" }));
+      const now = Math.floor(Date.now() / 1000);
+      const mine: Address[] = [];
+      for (let i = 0; i < n; i++) {
+        const vault = (await pub.readContract({ address: factory, abi: FACTORY_ABI, functionName: "vaultAt", args: [BigInt(i)] })) as Address;
+        const current = await read<Address>(vault, "agent");
+        if (current.toLowerCase() !== account.address.toLowerCase()) continue;
+        const s = await read<readonly [bigint, bigint, bigint, boolean]>(vault, "sessions", [account.address]);
+        if (s[3] && Number(s[2]) > now) mine.push(vault);
+      }
+      return mine;
+    },
     async now() {
       const block = await pub.getBlock();
       return Number(block.timestamp);

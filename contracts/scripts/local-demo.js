@@ -21,6 +21,15 @@ async function main() {
   await vault.addBill(newVendor.address, usd(45), now, 0, false, "Figma subscription");
   await vault.addBill(scammer.address, usd(950), now, 0, false, "Northwind Hosting - new bank details");
   await vault.addBill(atlas.address, usd(120), now + 10 * 86400, 0, false, "Atlas Freight, December");
-  console.log(JSON.stringify({ vault: v, token: await token.getAddress(), agent: agent.address }));
+  // A second company, created the way a founder would from the app: through the factory.
+  const factory = await (await ethers.getContractFactory("SluiceFactory")).deploy(await token.getAddress());
+  const tx = await factory.connect(owner).createVault("Lantern Studio", usd(50), usd(200));
+  const created = (await tx.wait()).logs.map((l) => factory.interface.parseLog(l)).find((e) => e?.name === "VaultCreated");
+  const lantern = await ethers.getContractAt("SluiceVault", created.args.vault);
+  await token.mint(created.args.vault, usd(1_000));
+  await lantern.grantSession(agent.address, usd(200), usd(400), now + 30 * 86400);
+  await lantern.setPayeeAllowed(northwind.address, true);
+  await lantern.addBill(northwind.address, usd(60), now, 30, true, "Studio rent");
+  console.log(JSON.stringify({ vault: v, factory: await factory.getAddress(), factoryVault: created.args.vault, token: await token.getAddress(), agent: agent.address }));
 }
 main().catch((e) => { console.error(e); process.exitCode = 1; });

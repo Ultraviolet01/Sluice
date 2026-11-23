@@ -28,6 +28,8 @@ export interface RoundOptions {
   say?: (e: Event) => void;
   /** Receives the round's alerts for the owner (Telegram). */
   alert?: (a: Alert) => void;
+  /** Wall-clock time (ms) after which no new bill is started; the rest wait for the next round. */
+  deadline?: number;
 }
 
 const day = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
@@ -78,6 +80,10 @@ export async function runVault(chain: Chain, vault: Address, o: RoundOptions): P
     v.bills.flatMap((bill) => candidatePeriods(bill, now).filter((p) => !settled.has(`${bill.id}:${p}`)).map((period) => ({ bill, period, due: dueAt(bill, period) }))),
   );
   for (const { bill, period, due } of work) {
+    if (o.deadline !== undefined && Date.now() > o.deadline) {
+      say({ step: "decide", text: "round time is up; the remaining bills wait for the next round" });
+      break;
+    }
     const { band, reason } = await chain.check(vault, bill.id, period);
     if (band === Band.Blocked && (reason === Reason.AlreadySettled || reason === Reason.AlreadyProposed)) continue;
 

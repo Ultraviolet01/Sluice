@@ -88,6 +88,13 @@ describe("Attacks with a stolen agent key", () => {
     await expect(vault.connect(agent).propose(1, 0, "x")).to.be.reverted;
   });
 
+  it("a rotated-out key is refused, even with an unexpired session", async () => {
+    const { vault, agent, thief } = await loadFixture(deploy);
+    await vault.grantSession(thief.address, usd(500), usd(600), (await time.latest()) + DAY); // owner rotates to a new key
+    await expect(vault.connect(agent).pay(0, 0)).to.be.reverted;
+    await expect(vault.connect(agent).propose(1, 0, "x")).to.be.reverted;
+  });
+
   it("an outsider can do nothing at all", async () => {
     const { vault, outsider } = await loadFixture(deploy);
     await expect(vault.connect(outsider).pay(0, 0)).to.be.reverted;

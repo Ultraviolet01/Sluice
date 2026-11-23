@@ -188,6 +188,23 @@ describe("SluiceVault", () => {
       await expect(vault.withdraw(owner.address, usd(1))).to.emit(vault, "Withdrawn");
     });
 
+    it("rotating the agent revokes the old key at once; re-granting the same agent just updates it", async () => {
+      const { vault, agent, stranger } = await loadFixture(deploy);
+      expect(await vault.agent()).to.equal(agent.address);
+      const exp = (await time.latest()) + 10 * DAY;
+      await expect(vault.grantSession(agent.address, usd(200), usd(300), exp)).to.not.emit(vault, "SessionRevoked");
+      expect((await vault.sessions(agent.address)).perPaymentCap).to.equal(usd(200));
+      await expect(vault.grantSession(stranger.address, usd(100), usd(200), exp))
+        .to.emit(vault, "SessionRevoked").withArgs(agent.address)
+        .and.to.emit(vault, "SessionGranted");
+      expect(await vault.agent()).to.equal(stranger.address);
+      expect((await vault.sessions(agent.address)).active).to.equal(false);
+      await expect(vault.connect(agent).pay(0, 0)).to.be.revertedWithCustomError(vault, "NotAgentPayable").withArgs(R.NoSession);
+      await expect(vault.connect(stranger).pay(0, 0)).to.emit(vault, "BillPaid");
+      await vault.revokeSession(stranger.address);
+      expect(await vault.agent()).to.equal(ethers.ZeroAddress);
+    });
+
     it("logs every policy change with old and new values", async () => {
       const { vault } = await loadFixture(deploy);
       await expect(vault.setCashBuffer(usd(250))).to.emit(vault, "PolicyChanged").withArgs(ethers.encodeBytes32String("cashBuffer"), usd(100), usd(250));

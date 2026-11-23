@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { isAddress, type Address } from "viem";
 import { PageHead } from "../components.tsx";
-import { EXPLORER, short } from "../chain.ts";
+import { EXPLORER, HOSTED_AGENT, short } from "../chain.ts";
 import { NETWORK } from "../data.ts";
 import { fmt, toUnits } from "../model.ts";
 import { useApp } from "../state.tsx";
@@ -9,7 +9,7 @@ import "./settings.css";
 
 export default function Settings() {
   const { model: m, act, busy } = useApp();
-  const [f, setF] = useState({ agent: "", per: "100", daily: "500", days: "30" });
+  const [f, setF] = useState({ agent: HOSTED_AGENT as string, per: "100", daily: "500", days: "30" });
   const [err, setErr] = useState<string | null>(null);
   if (!m) return null;
   const s = m.session;
@@ -54,7 +54,10 @@ export default function Settings() {
           )}
           <div className="st-grant">
             <p className="t14">{s ? "Change or rotate the session" : "Grant a session"}</p>
-            <label className="form-row"><span>Agent address</span><input className="mono" placeholder={s?.agent ?? "0x…"} value={f.agent} onChange={(e) => setF({ ...f, agent: e.target.value })} /></label>
+            <label className="form-row"><span>Agent address{HOSTED_AGENT && f.agent.toLowerCase() === HOSTED_AGENT.toLowerCase() ? " (Sluice's hosted agent)" : ""}</span><input className="mono" placeholder={s?.agent ?? "0x…"} value={f.agent} onChange={(e) => setF({ ...f, agent: e.target.value })} /></label>
+            {live && s && f.agent && f.agent.toLowerCase() !== s.agent.toLowerCase() && (
+              <p className="xs" style={{ color: "var(--accent-brass)" }}>Signing this rotates the key: {short(s.agent)} stops working at once.</p>
+            )}
             <div className="st-3">
               <label className="form-row"><span>Per payment</span><input inputMode="decimal" value={f.per} onChange={(e) => setF({ ...f, per: e.target.value })} /></label>
               <label className="form-row"><span>Per 24 hours</span><input inputMode="decimal" value={f.daily} onChange={(e) => setF({ ...f, daily: e.target.value })} /></label>

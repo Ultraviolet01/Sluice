@@ -27,6 +27,7 @@ export const VAULT_ABI = parseAbi([
   "function getBill(uint256) view returns ((address payee, uint128 amount, uint64 firstDue, uint32 intervalDays, bool active, bool critical, string label))",
   "function settlements(uint256, uint32) view returns (uint8 status, address agent, uint64 createdAt, uint8 reason, string note)",
   "function isAllowedPayee(address) view returns (bool)",
+  "function agent() view returns (address)",
   "function isBlockedPayee(address) view returns (bool)",
   // owner actions
   "function approve(uint256 billId, uint32 period)",
@@ -69,6 +70,8 @@ export interface BillInput {
 }
 
 export const FACTORY = (import.meta.env.VITE_FACTORY_ADDRESS || "") as Address | "";
+/** The hosted Sluice agent's address, offered when the owner grants a session. */
+export const HOSTED_AGENT = (import.meta.env.VITE_AGENT_ADDRESS || "") as Address | "";
 
 export const FACTORY_ABI = parseAbi([
   "function createVault(string name, uint256 cashBuffer, uint256 approvalThreshold) returns (address)",

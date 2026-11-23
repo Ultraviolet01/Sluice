@@ -16,5 +16,6 @@ run "agent typecheck" bash -c "cd agent && npm run typecheck"
 run "agent tests" bash -c "cd agent && npm test"
 run "web tests (invoice reader, bill import)" bash -c "cd web && npm test"
 run "web typecheck and build" bash -c "cd web && npm run build"
+run "docs line links match the contract" node scripts/check-links.mjs
 echo
 if [ $fail -eq 0 ]; then echo "VERIFY PASSED: $pass passed, 0 failed"; else echo "VERIFY FAILED: $pass passed, $fail failed"; exit 1; fi

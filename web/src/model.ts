@@ -104,11 +104,12 @@ export async function loadLive(vault: Address, fromBlock = 0n): Promise<Model> {
   const label = (id: number) => bills[id]?.label ?? `Bill #${id}`;
   const payeeOf = (id: number) => bills[id]?.payee;
 
-  // The agent: the latest session granted.
-  const grant = [...events].reverse().find((e) => e.name === "SessionGranted");
+  // The agent: the vault's one current agent (granting a new one revokes the old).
   let session: Session | null = null;
-  if (grant) {
-    const agent = grant.args.agent as Address;
+  const current = await read<Address>("agent");
+  const lastGranted = [...events].reverse().find((e) => e.name === "SessionGranted")?.args.agent as Address | undefined;
+  const agent = current !== "0x0000000000000000000000000000000000000000" ? current : lastGranted;
+  if (agent) {
     const [s, spent] = await Promise.all([read<readonly [bigint, bigint, bigint, boolean]>("sessions", [agent]), read<bigint>("spentInWindow", [agent])]);
     session = { agent, perPaymentCap: s[0], dailyCap: s[1], expiresAt: Number(s[2]), active: s[3], spent };
   }

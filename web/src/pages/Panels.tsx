@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Address } from "viem";
 import { Modal } from "../components.tsx";
-import { FACTORY, createCompany, errorText, myCompanies, short } from "../chain.ts";
+import { FACTORY, HOSTED_AGENT, createCompany, errorText, myCompanies, ownerSend, short } from "../chain.ts";
 import { fmt, toUnits, type Model } from "../model.ts";
 import { useApp } from "../state.tsx";
 import { parseBills } from "./importBills.ts";
@@ -66,7 +66,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
 /** Creates the connected wallet's company vault through the factory, then opens it. */
 export function CreatePanel({ onClose }: { onClose: () => void }) {
   const { account, connect, toast } = useApp();
-  const [f, setF] = useState({ name: "", buffer: "100", threshold: "100" });
+  const [f, setF] = useState({ name: "", buffer: "100", threshold: "100", hire: Boolean(HOSTED_AGENT), per: "100", daily: "500" });
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -79,6 +79,16 @@ export function CreatePanel({ onClose }: { onClose: () => void }) {
       setBusy(true);
       const vault = await createCompany(account, name, toUnits(f.buffer), toUnits(f.threshold));
       toast(`Created ${name}: ${short(vault)}`);
+      if (f.hire && HOSTED_AGENT) {
+        // Second signature: give Sluice's hosted agent a 30-day session with these caps.
+        const per = toUnits(f.per), daily = toUnits(f.daily);
+        const exp = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
+        try {
+          await ownerSend(vault, account, { fn: "grantSession", args: [HOSTED_AGENT, per, daily, exp] });
+        } catch (e) {
+          toast(`Company created; the agent's session wasn't signed (${errorText(e)}). Grant it under Settings.`);
+        }
+      }
       window.location.hash = `#/app/rules?vault=${vault}`;
       window.location.reload();
     } catch (e) {
@@ -102,7 +112,21 @@ export function CreatePanel({ onClose }: { onClose: () => void }) {
       <label className="form-row"><span>Company name</span><input maxLength={48} placeholder="Kora Supply Group" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
       <label className="form-row"><span>Cash buffer (tUSD8): the agent never spends below this</span><input inputMode="decimal" value={f.buffer} onChange={(e) => setF({ ...f, buffer: e.target.value })} /></label>
       <label className="form-row"><span>Approval needed above (tUSD8)</span><input inputMode="decimal" value={f.threshold} onChange={(e) => setF({ ...f, threshold: e.target.value })} /></label>
-      <p className="faint xs" style={{ marginTop: 10 }}>Next: approve payees, list bills, fund the vault with tUSD8, and grant the agent a session. You can change every setting later.</p>
+      {HOSTED_AGENT && (
+        <>
+          <label className="check-row">
+            <input type="checkbox" checked={f.hire} onChange={(e) => setF({ ...f, hire: e.target.checked })} />
+            <span><b>Hire Sluice's agent now</b> ({short(HOSTED_AGENT)}): a second signature gives it a 30-day session with these caps. It can only pay bills you list.</span>
+          </label>
+          {f.hire && (
+            <div className="st-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              <label className="form-row"><span>Per payment</span><input inputMode="decimal" value={f.per} onChange={(e) => setF({ ...f, per: e.target.value })} /></label>
+              <label className="form-row"><span>Per 24 hours</span><input inputMode="decimal" value={f.daily} onChange={(e) => setF({ ...f, daily: e.target.value })} /></label>
+            </div>
+          )}
+        </>
+      )}
+      <p className="faint xs" style={{ marginTop: 10 }}>Next: approve payees, list bills and fund the vault with tUSD8. You can change every setting later.</p>
       {err && <p className="xs" style={{ color: "var(--status-critical)", marginTop: 8 }}>{err}</p>}
       <div className="row-between" style={{ marginTop: 16, justifyContent: "flex-end" }}>
         <button className="btn btn-secondary" onClick={onClose}>Cancel</button>

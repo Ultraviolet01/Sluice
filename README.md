@@ -41,14 +41,14 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 | Bills only | `pay(billId, period)` takes no payee and no amount, so even a stolen agent key can only pay the owner's own bills |
 | Once per period | Each bill period settles at most once, and never more than 3 days early |
 | Scoped session | The agent gets a per-payment cap, a rolling 24h cap and an expiry (`grantSession`) |
-| Instant stop | `revokeSession(agent)`; `pause()` halts every agent payment |
+| Instant stop | `revokeSession(agent)`; `pause()` halts every agent payment; granting a new agent revokes the old key |
 | Payees | New payees need the owner; the blocklist always wins, even on owner approval |
 | Human approval | Bills outside the limits are proposed with a note and wait for `approve` or `reject` |
 | Cash buffer | No agent payment may drop the vault below `cashBuffer` |
 | Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
 | Receipts | `BillPaid`, `PaymentProposed`, `PaymentRejected`, and `PolicyChanged` with old and new values |
 
-21 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
+22 attacks with a stolen agent key, all refused: [`contracts/test/attacks.test.js`](contracts/test/attacks.test.js). Every claim with its line of code: [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Check it
 
@@ -58,7 +58,7 @@ You need Node.js 22.
 npm run verify
 ```
 
-One line per check, ending `VERIFY PASSED: 5 passed, 0 failed`: 44 contract tests (vault, factory and the attack suite), the agent's typecheck and 31 tests, the web tests (invoice reader and bill import), and the web build.
+One line per check, ending `VERIFY PASSED: 6 passed, 0 failed`: 46 contract tests (vault, factory and the attack suite), the agent's typecheck and 32 tests, the web tests (invoice reader and bill import), and the web build.
 
 ### See the agent work, locally
 
@@ -116,7 +116,7 @@ npm run deploy
 | `contracts/` | `SluiceVault.sol`, `SluiceFactory.sol`, tests and attack suite, deploy and local demo scripts (Hardhat) |
 | `agent/` | The agent: observe, forecast, decide, review, act, learn. See [agent/README.md](agent/README.md) |
 | `web/` | Landing page, owner dashboard, and the invoice reader function. See [web/README.md](web/README.md) |
-| `docs/` | [Security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md) |
+| `docs/` | [Security](docs/SECURITY.md), [judging criteria map](docs/JUDGING.md), [demo script](docs/DEMO.md), [backlog](docs/BACKLOG.md) |
 | `.github/workflows/` | `ci.yml` runs every check on each push; `agent.yml` runs the agent every 15 minutes |
 
 ## Known limits

@@ -114,6 +114,9 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     uint256 public approvalThreshold;
 
     mapping(address agent => Session) public sessions;
+    /// @notice The vault's one current agent. Granting a session to another
+    ///         address revokes this one, so a rotated key stops working at once.
+    address public agent;
     mapping(address agent => Spend[SLOTS]) private _spends;
     mapping(address agent => uint256) private _spendHead;
 
@@ -170,17 +173,24 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
 
     // ================================================================ owner
 
-    function grantSession(address agent, uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt) external onlyOwner {
-        if (agent == address(0)) revert ZeroAddress();
+    function grantSession(address newAgent, uint128 perPaymentCap, uint128 dailyCap, uint64 expiresAt) external onlyOwner {
+        if (newAgent == address(0)) revert ZeroAddress();
         if (perPaymentCap == 0 || dailyCap < perPaymentCap || expiresAt <= block.timestamp) revert InvalidSession();
-        sessions[agent] = Session(perPaymentCap, dailyCap, expiresAt, true);
-        emit SessionGranted(agent, perPaymentCap, dailyCap, expiresAt);
+        address old = agent;
+        if (old != address(0) && old != newAgent && sessions[old].active) {
+            sessions[old].active = false;
+            emit SessionRevoked(old);
+        }
+        agent = newAgent;
+        sessions[newAgent] = Session(perPaymentCap, dailyCap, expiresAt, true);
+        emit SessionGranted(newAgent, perPaymentCap, dailyCap, expiresAt);
     }
 
     /// @notice Instantly removes an agent's ability to pay or propose.
-    function revokeSession(address agent) external onlyOwner {
-        sessions[agent].active = false;
-        emit SessionRevoked(agent);
+    function revokeSession(address who) external onlyOwner {
+        sessions[who].active = false;
+        if (who == agent) agent = address(0);
+        emit SessionRevoked(who);
     }
 
     function setPayeeAllowed(address payee, bool allowed) external onlyOwner {
@@ -313,9 +323,9 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     // ================================================================ views
 
     /// @notice What would happen if `agent` settled this bill period now.
-    function checkPayment(address agent, uint256 billId, uint32 period) public view returns (Band, Reason) {
+    function checkPayment(address who, uint256 billId, uint32 period) public view returns (Band, Reason) {
         if (paused()) return (Band.Blocked, Reason.Paused);
-        Session memory s = sessions[agent];
+        Session memory s = sessions[who];
         if (!s.active) return (Band.Blocked, Reason.NoSession);
         if (block.timestamp >= s.expiresAt) return (Band.Blocked, Reason.SessionExpired);
         if (billId >= _bills.length) return (Band.Blocked, Reason.NoSuchBill);
@@ -331,7 +341,7 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
         if (!isAllowedPayee[b.payee]) return (Band.NeedsApproval, Reason.NotAllowlisted);
         if (b.amount > s.perPaymentCap) return (Band.NeedsApproval, Reason.OverPerPaymentCap);
         if (b.amount > approvalThreshold) return (Band.NeedsApproval, Reason.OverApprovalThreshold);
-        if (spentInWindow(agent) + b.amount > s.dailyCap) return (Band.NeedsApproval, Reason.OverDailyCap);
+        if (spentInWindow(who) + b.amount > s.dailyCap) return (Band.NeedsApproval, Reason.OverDailyCap);
         uint256 bal = token.balanceOf(address(this));
         if (b.amount > bal || bal - b.amount < cashBuffer) return (Band.NeedsApproval, Reason.BelowCashBuffer);
         return (Band.RunsAlone, Reason.Ok);
@@ -343,17 +353,17 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
     }
 
     /// @notice Sum of the agent's own payments in the last 24 hours.
-    function spentInWindow(address agent) public view returns (uint256 total) {
-        Spend[SLOTS] storage ring = _spends[agent];
+    function spentInWindow(address who) public view returns (uint256 total) {
+        Spend[SLOTS] storage ring = _spends[who];
         for (uint256 i; i < SLOTS; ++i) {
             if (ring[i].at != 0 && block.timestamp < uint256(ring[i].at) + WINDOW) total += ring[i].amount;
         }
     }
 
-    function remainingDailyBudget(address agent) external view returns (uint256) {
-        Session memory s = sessions[agent];
+    function remainingDailyBudget(address who) external view returns (uint256) {
+        Session memory s = sessions[who];
         if (!s.active || block.timestamp >= s.expiresAt) return 0;
-        uint256 spent = spentInWindow(agent);
+        uint256 spent = spentInWindow(who);
         return spent >= s.dailyCap ? 0 : s.dailyCap - spent;
     }
 
@@ -371,14 +381,14 @@ contract SluiceVault is Ownable2Step, Pausable, ReentrancyGuard {
 
     // ============================================================= internal
 
-    function _recordSpend(address agent, uint128 amount) internal {
-        uint256 head = _spendHead[agent];
-        Spend storage slot = _spends[agent][head];
+    function _recordSpend(address who, uint128 amount) internal {
+        uint256 head = _spendHead[who];
+        Spend storage slot = _spends[who][head];
         // The oldest slot must have left the window, or the ring cannot hold this payment.
         if (slot.at != 0 && block.timestamp < uint256(slot.at) + WINDOW) revert TooManyRecentPayments();
         slot.at = uint64(block.timestamp);
         slot.amount = amount;
-        _spendHead[agent] = (head + 1) % SLOTS;
+        _spendHead[who] = (head + 1) % SLOTS;
     }
 
     function _transfer(address to, uint256 amount) internal {

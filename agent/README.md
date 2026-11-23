@@ -14,6 +14,8 @@ Settles the bills the owner listed on a SluiceVault, inside the vault's limits, 
 | Alert | A Telegram message when a bill goes to the owner, a payment is refused, a shortfall is ahead, the session is about to expire, or a round fails. Each situation is sent once | `src/notify.ts` |
 | Learn | After three rising owner approvals for one payee, drafts a higher cap. The owner decides | `draftCap` |
 
+Each round has a time limit (`SLUICE_ROUND_SECONDS`, default 420, inside the job's 10 minutes), and each vault at most 90 seconds; bills not reached wait for the next round, which the vault makes safe.
+
 The vault re-checks everything on chain; the agent can only ever be stricter than the vault.
 
 The agent keeps no database. To send each Telegram alert once, it remembers what it sent in `.sluice-alerts.json`, which the workflow keeps between runs with the GitHub Actions cache; losing it only means one repeated alert.
@@ -52,10 +54,11 @@ In the GitHub repository, **Settings → Secrets and variables → Actions**:
 |---|---|---|
 | Secret | `AGENT_PRIVATE_KEY` | The agent's key. Give its address a session with `grantSession` on the vault |
 | Secret | `ANTHROPIC_API_KEY` | Optional, for the Claude review |
-| Variable | `SLUICE_VAULTS` | Comma-separated vault addresses |
+| Variable | `SLUICE_FACTORY` | Serve every vault the factory created whose current agent is this key, with a live session. New companies are picked up automatically |
+| Variable | `SLUICE_VAULTS` | And/or a comma-separated list of vault addresses |
 | Variable | `SLUICE_FROM_BLOCK` | Optional, the vault's deployment block |
 | Secret | `TELEGRAM_BOT_TOKEN` | Optional, for alerts: create a bot with @BotFather |
 | Secret | `TELEGRAM_CHAT_ID` | Optional, the chat to alert: message your bot, then read `chat.id` from `https://api.telegram.org/bot<token>/getUpdates` |
 | Variable | `SLUICE_APP_URL` | Optional, the dashboard's address, linked from alerts |
 
-Until `SLUICE_VAULTS` and `AGENT_PRIVATE_KEY` are set, each scheduled run skips with a notice. Run it by hand from the **Actions** tab (`agent` → **Run workflow**), with **dry run** ticked to sign nothing. The agent's address needs a little tQDAY for gas.
+Until `AGENT_PRIVATE_KEY` and either `SLUICE_FACTORY` or `SLUICE_VAULTS` are set, each scheduled run skips with a notice. Run it by hand from the **Actions** tab (`agent` → **Run workflow**), with **dry run** ticked to sign nothing. The agent's address needs a little tQDAY for gas.

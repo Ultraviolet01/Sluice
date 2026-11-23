@@ -7,7 +7,8 @@
 #              ANTHROPIC_API_KEY  (optional) Claude review and plain-English reasons
 #              TELEGRAM_BOT_TOKEN (optional) with TELEGRAM_CHAT_ID: alerts when something needs you
 #              TELEGRAM_CHAT_ID
-#   Variables: SLUICE_VAULTS      (required) comma-separated vault addresses
+#   Variables: SLUICE_FACTORY     serve every vault the factory created that gave this agent a session
+#              SLUICE_VAULTS      and/or a comma-separated list of vault addresses
 #              SLUICE_FROM_BLOCK  (optional) the vault's deployment block
 #              SLUICE_APP_URL     (optional) the dashboard's address, linked from alerts
 name: agent
@@ -56,14 +57,15 @@ jobs:
           AGENT_PRIVATE_KEY: ${{ secrets.AGENT_PRIVATE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLUICE_VAULTS: ${{ vars.SLUICE_VAULTS }}
+          SLUICE_FACTORY: ${{ vars.SLUICE_FACTORY }}
           SLUICE_FROM_BLOCK: ${{ vars.SLUICE_FROM_BLOCK }}
           SLUICE_APP_URL: ${{ vars.SLUICE_APP_URL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           AEVUM_RPC_URL: https://rpc-test.qday.info
         run: |
-          if [ -z "$SLUICE_VAULTS" ] || [ -z "$AGENT_PRIVATE_KEY" ]; then
-            echo "::notice::SLUICE_VAULTS or AGENT_PRIVATE_KEY not set yet; skipping this round."
+          if { [ -z "$SLUICE_VAULTS" ] && [ -z "$SLUICE_FACTORY" ]; } || [ -z "$AGENT_PRIVATE_KEY" ]; then
+            echo "::notice::AGENT_PRIVATE_KEY, or both SLUICE_FACTORY and SLUICE_VAULTS, not set yet; skipping this round."
             exit 0
           fi
           if [ "${{ inputs.dry_run }}" = "true" ]; then npx tsx src/main.ts --dry-run; else npx tsx src/main.ts; fi

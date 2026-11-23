@@ -62,7 +62,8 @@ export default function Docs() {
           <tbody>
             <tr><td>Secret</td><td><code>AGENT_PRIVATE_KEY</code></td><td>The agent's key; its address needs a little tQDAY</td></tr>
             <tr><td>Secret</td><td><code>ANTHROPIC_API_KEY</code></td><td>Optional, turns on the Claude review</td></tr>
-            <tr><td>Variable</td><td><code>SLUICE_VAULTS</code></td><td>Comma-separated vault addresses</td></tr>
+            <tr><td>Variable</td><td><code>SLUICE_FACTORY</code></td><td>Serve every company created through the factory that hired this agent</td></tr>
+            <tr><td>Variable</td><td><code>SLUICE_VAULTS</code></td><td>And/or a comma-separated list of vault addresses</td></tr>
             <tr><td>Variable</td><td><code>SLUICE_FROM_BLOCK</code></td><td>Optional, the vault's deployment block</td></tr>
             <tr><td>Secret</td><td><code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code></td><td>Optional, Telegram alerts when something needs you</td></tr>
           </tbody>
@@ -72,7 +73,7 @@ export default function Docs() {
 
       <Sec id="The dashboard" title="The dashboard">
         <Cmd>{"cd web && npm install && npm run dev"}</Cmd>
-        <p>With no vault set it shows demo data. Set <code>VITE_FACTORY_ADDRESS</code> to turn on <b>Create a company</b>, and <code>VITE_VAULT_ADDRESS</code> (and optionally <code>VITE_FROM_BLOCK</code>, <code>VITE_COMPANY_NAME</code>) when building, or add <code>?vault=0x…</code> to the address. Invoice reading needs <code>ANTHROPIC_API_KEY</code> on the host. More in <Code path="web/README.md">web/README.md</Code>.</p>
+        <p>With no vault set it shows demo data. Set <code>VITE_FACTORY_ADDRESS</code> to turn on <b>Create a company</b>, <code>VITE_AGENT_ADDRESS</code> to offer the hosted agent when a company is created, and <code>VITE_VAULT_ADDRESS</code> (and optionally <code>VITE_FROM_BLOCK</code>, <code>VITE_COMPANY_NAME</code>) when building, or add <code>?vault=0x…</code> to the address. Invoice reading needs <code>ANTHROPIC_API_KEY</code> on the host. More in <Code path="web/README.md">web/README.md</Code>.</p>
       </Sec>
 
       <Sec id="Contract reference" title="Contract reference">
@@ -89,8 +90,8 @@ export default function Docs() {
 
       <Sec id="Check it" title="Check it">
         <ul className="dp-list">
-          <li><b>Contract and attacks:</b> <code>cd contracts && npx hardhat test</code>, 44 tests, including the factory and 21 stolen-key attacks.</li>
-          <li><b>Agent:</b> <code>cd agent && npm test</code>, 31 tests: decisions, holding bills, the injection guard, the review, alerts, and whole rounds against a fake vault.</li>
+          <li><b>Contract and attacks:</b> <code>cd contracts && npx hardhat test</code>, 46 tests, including the factory and 22 stolen-key attacks.</li>
+          <li><b>Agent:</b> <code>cd agent && npm test</code>, 32 tests: decisions, holding bills, the injection guard, the review, alerts, and whole rounds against a fake vault.</li>
           <li><b>End to end on a local chain:</b> the steps in the <a href={`${REPO}#see-the-agent-work-locally`} target="_blank" rel="noreferrer">README</a>, which deploy a demo company and run a real round.</li>
         </ul>
       </Sec>
