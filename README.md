@@ -84,7 +84,7 @@ You see Northwind paid alone, Atlas proposed (over the cap), Figma proposed (new
 
 ### On Aevum Testnet
 
-After deploying: `npm run demo:setup`, `npm run functions`, `npm run attacks` and `npm run flood` in `contracts/` (each with `-- --network aevumTestnet`) set up the demo company and run the stolen-key checks against it; `npm run agent:new-key`, `agent:fund` and `agent:rotate` create, fund and rotate the agent's key; `npm run demo` in `agent/` tells one round step by step; `node scripts/verified.mjs` writes [docs/VERIFIED.md](docs/VERIFIED.md) from their records.
+After deploying: `npm run demo:setup`, `npm run functions`, `npm run money`, `npm run attacks` and `npm run flood` in `contracts/` (each with `-- --network aevumTestnet`) set up the demo company and run the stolen-key checks against it; `npm run agent:new-key`, `agent:fund` and `agent:rotate` create, fund and rotate the agent's key; `npm run demo` in `agent/` tells one round step by step; `node scripts/verified.mjs` writes [docs/VERIFIED.md](docs/VERIFIED.md) from their records.
 
 ### The dashboard
 

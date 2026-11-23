@@ -1,0 +1,90 @@
+{
+  "network": "aevumTestnet",
+  "vault": "0x9CbF6aF73967CB87014d75dC774aEDf20F9648D3",
+  "owner": "0xdE68a9391600B77E1337aeDd7ECFB86494eC7698",
+  "agent": "0x2ea4bf1d859918adf150F032F7E0C233f5498d3A",
+  "rows": [
+    {
+      "fn": "setPayeesAllowed",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x24e7313aa3b67fbd46e029833d556dd11ad9dd5e7b1bd55d0eaae2b2c2a4071b",
+      "ok": true,
+      "check": "two payees approved"
+    },
+    {
+      "fn": "addBills",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x44d6c977e21adf476f25574cec388c8345bfa1ec55b3cbdc15240e7ebef426c5",
+      "ok": true,
+      "check": "two bills due now"
+    },
+    {
+      "fn": "setCashBuffer",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xe9ec162eb89fdcc1d62603e7844e5a5861eff19e5c8e0c462ccb58686b793684",
+      "ok": true,
+      "check": "buffer 0.1 tUSD8"
+    },
+    {
+      "fn": "grantSession",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0xdf94e914a9980b581d33ef0c4952dc160e71ebc6060aeda4e253c654b6070fc0",
+      "ok": true,
+      "check": "agent may pay up to 0.5 per payment"
+    },
+    {
+      "fn": "deposit",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x4185327af48ce9780ac19c3f3462bf07224baec98b1d98d7e1b759a453ffcc67",
+      "ok": true,
+      "check": "vault 0.0 tUSD8 -> 2.0 tUSD8"
+    },
+    {
+      "fn": "pay",
+      "who": "agent",
+      "kind": "tx",
+      "tx": "0x3e7c835bd91db5afd82af2d5a208a8f896e131bca6d4666f831846151fb51f56",
+      "ok": true,
+      "check": "0.3 tUSD8 left the vault and reached the bill's own payee (payee 0.0 tUSD8 -> 0.3 tUSD8)"
+    },
+    {
+      "fn": "pay",
+      "who": "agent",
+      "kind": "refused",
+      "ok": true,
+      "check": "same bill again refused: NotAgentPayable(AlreadySettled)"
+    },
+    {
+      "fn": "propose",
+      "who": "agent",
+      "kind": "tx",
+      "tx": "0x05d0c3e1eff8350c9b6c06b921432aac3728bab1c8da5cb8a741b4d29b49d411",
+      "ok": true,
+      "check": "the agent filed the 0.8 bill for the owner"
+    },
+    {
+      "fn": "approve",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x341ae81cdc27c70bb787c492679c8f4738cfb84e34ba616afe913f060ebfe74e",
+      "ok": true,
+      "check": "owner approved; 0.8 tUSD8 reached the bill's payee (payee 0.0 tUSD8 -> 0.8 tUSD8)"
+    },
+    {
+      "fn": "withdraw",
+      "who": "owner",
+      "kind": "tx",
+      "tx": "0x3e8763359734e95689c17d0d60507b4cacf0a6399d166d63d51a7fd644e4cd75",
+      "ok": true,
+      "check": "0.9 tUSD8 back to the owner; vault now 0.0 tUSD8"
+    }
+  ],
+  "passed": 10,
+  "failed": 0,
+  "at": "2026-11-23T12:39:31.759Z"
+}

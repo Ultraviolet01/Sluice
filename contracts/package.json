@@ -9,6 +9,7 @@
     "demo:setup": "hardhat run scripts/setup-demo.js",
     "attacks": "hardhat run scripts/live-attacks.js",
     "functions": "hardhat run scripts/live-functions.js",
+    "money": "hardhat run scripts/live-money.js",
     "flood": "hardhat run scripts/flood.js",
     "agent:new-key": "node scripts/new-agent-key.js",
     "agent:fund": "hardhat run scripts/fund-agent.js",
