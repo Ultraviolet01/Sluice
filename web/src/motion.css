@@ -160,3 +160,6 @@ tr.reveal { transform: none; transition: opacity 400ms ease var(--d, 0ms); }
 
 /* The page wrapper keeps the main column's spacing between rows. */
 .page-in { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+
+/* Menus opened from a page's header (Export to Excel) stay above the cards that animate in below. */
+.page-in > .page-head { position: relative; z-index: 6; }
