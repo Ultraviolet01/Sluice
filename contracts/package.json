@@ -8,7 +8,10 @@
     "deploy": "hardhat run scripts/deploy.js --network aevumTestnet",
     "demo:setup": "hardhat run scripts/setup-demo.js",
     "attacks": "hardhat run scripts/live-attacks.js",
-    "flood": "hardhat run scripts/flood.js"
+    "flood": "hardhat run scripts/flood.js",
+    "agent:new-key": "node scripts/new-agent-key.js",
+    "agent:fund": "hardhat run scripts/fund-agent.js",
+    "agent:rotate": "hardhat run scripts/rotate-agent-key.js"
   },
   "license": "MIT",
   "devDependencies": {

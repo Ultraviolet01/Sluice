@@ -52,7 +52,7 @@ In the GitHub repository, **Settings → Secrets and variables → Actions**:
 
 | Kind | Name | Value |
 |---|---|---|
-| Secret | `AGENT_PRIVATE_KEY` | The agent's key. Give its address a session with `grantSession` on the vault |
+| Secret | `AGENT_PRIVATE_KEY` | The agent's key: create it with `cd contracts && npm run agent:new-key`, then `gh secret set AGENT_PRIVATE_KEY < contracts/agent.key`. Hire it on your vaults with `npm run agent:rotate` or under Settings |
 | Secret | `ANTHROPIC_API_KEY` | Optional, for the Claude review |
 | Variable | `SLUICE_FACTORY` | Serve every vault the factory created whose current agent is this key, with a live session. New companies are picked up automatically |
 | Variable | `SLUICE_VAULTS` | And/or a comma-separated list of vault addresses |
