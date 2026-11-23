@@ -8,6 +8,7 @@
 #              TELEGRAM_BOT_TOKEN (optional) with TELEGRAM_CHAT_ID: alerts when something needs you
 #              TELEGRAM_CHAT_ID
 #              OPERATOR_TELEGRAM_CHAT_ID (optional) where operator alerts go, e.g. the agent's gas running low
+#   The deployed factory, its block and the live site are the defaults below; variables override them.
 #   Variables: SLUICE_FACTORY     serve every vault the factory created that gave this agent a session
 #              SLUICE_VAULTS      and/or a comma-separated list of vault addresses
 #              SLUICE_FROM_BLOCK  (optional) the vault's deployment block
@@ -58,9 +59,9 @@ jobs:
           AGENT_PRIVATE_KEY: ${{ secrets.AGENT_PRIVATE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLUICE_VAULTS: ${{ vars.SLUICE_VAULTS }}
-          SLUICE_FACTORY: ${{ vars.SLUICE_FACTORY }}
-          SLUICE_FROM_BLOCK: ${{ vars.SLUICE_FROM_BLOCK }}
-          SLUICE_APP_URL: ${{ vars.SLUICE_APP_URL }}
+          SLUICE_FACTORY: ${{ vars.SLUICE_FACTORY || '0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9' }}
+          SLUICE_FROM_BLOCK: ${{ vars.SLUICE_FROM_BLOCK || '3911562' }}
+          SLUICE_APP_URL: ${{ vars.SLUICE_APP_URL || 'https://usesluice.vercel.app' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           OPERATOR_TELEGRAM_CHAT_ID: ${{ secrets.OPERATOR_TELEGRAM_CHAT_ID }}
