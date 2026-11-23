@@ -81,3 +81,8 @@
   .ld-foot { padding: 20px 16px; }
   .ld-callout { top: 4%; }
 }
+.ld-3d { left: 0; top: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s ease; }
+.ld-3d.on { opacity: 1; }
+.ld-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+.ld-scene .ld-callout { z-index: 2; text-shadow: 0 1px 12px rgba(246,248,247,.9); }
+@media (max-width: 900px) { .ld-scene { aspect-ratio: 4 / 3; } }

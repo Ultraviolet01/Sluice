@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import chartGrid from "../assets/landing/chart-grid.svg";
 import compass from "../assets/landing/compass.svg";
 import horizon from "../assets/landing/horizon.svg";
@@ -22,6 +22,26 @@ const KEY_PERMS = [
 
 export default function Landing() {
   const [over, setOver] = useState(false);
+  const host = useRef<HTMLDivElement>(null);
+  const harbor = useRef<{ setOver(o: boolean): void; dispose(): void } | null>(null);
+  const [is3d, setIs3d] = useState(false);
+  // The 3D harbor loads on its own, after the page; the flat drawing stays if WebGL is missing.
+  useEffect(() => {
+    let gone = false;
+    import("./harbor3d.ts")
+      .then(({ createHarbor, webglAvailable }) => {
+        if (gone || !host.current || !webglAvailable()) return;
+        harbor.current = createHarbor(host.current);
+        setIs3d(true);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+      harbor.current?.dispose();
+      harbor.current = null;
+    };
+  }, []);
+  useEffect(() => harbor.current?.setOver(over), [over, is3d]);
   useEffect(() => {
     const t = setInterval(() => setOver((v) => !v), 4000);
     return () => clearInterval(t);
@@ -52,9 +72,10 @@ export default function Landing() {
       </header>
 
       <section className="ld-scene" aria-label="A ship riding under its load line">
+        <div ref={host} className={`abs ld-3d${is3d ? " on" : ""}`} aria-hidden="true" />
+        {!is3d && (
+          <>
         <img className="abs" src={chartGrid} style={{ left: 0, top: 0, width: "100%", height: "60.6%" }} alt="" />
-        <img className="abs" src={compass} style={{ left: "85.56%", top: "7.5%", width: "7.78%" }} alt="" />
-        <span className="abs display ld-north">N</span>
         <div className="abs ld-far" />
         <img className="abs" src={horizon} style={{ left: 0, top: "60.47%", width: "100%", height: "3.1%" }} alt="" />
         <div className={`abs ld-ship${over ? " low" : ""}`}>
@@ -67,6 +88,10 @@ export default function Landing() {
         </div>
         <div className="abs ld-near" />
         <div className="abs ld-waves"><img src={waves} alt="" /></div>
+          </>
+        )}
+        <img className="abs" src={compass} style={{ left: "85.56%", top: "7.5%", width: "7.78%" }} alt="" />
+        <span className="abs display ld-north">N</span>
         <div className={`abs ld-callout${over ? " hide" : ""}`}>
           <p className="display">Paying Northwind Hosting, 80 tUSD8</p>
           <p className="under">Under the line, so Sluice pays it alone</p>
