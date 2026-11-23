@@ -7,7 +7,7 @@
 //   npx hardhat run scripts/live-functions.js --network aevumTestnet
 //   (agent key: contracts/agent.key or AGENT_PRIVATE_KEY; bot key: ../bot.key or BOT_GUARDIAN_KEY)
 //
-// Writes deployments/<network>-functions.json for scripts/verified.mjs.
+// Writes deployments/<network>-functions.json for verified.mjs.
 const fs = require("fs");
 const path = require("path");
 const { ethers, network, usd, fmt, isLocal, explorerTx, explorerAddr, save, load, agentSigner, reason, readable } = require("./lib/common.js");

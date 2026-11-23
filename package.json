@@ -3,6 +3,10 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "verify": "bash scripts/verify.sh"
+    "verify": "npm run -s check:contracts && npm run -s check:agent && npm run -s check:bot && npm run -s check:web && echo && echo 'VERIFY PASSED: contracts, agent, bot and web'",
+    "check:contracts": "cd contracts && ([ -d node_modules ] || npm ci --legacy-peer-deps) && npx hardhat test",
+    "check:agent": "cd agent && ([ -d node_modules ] || npm ci) && npm run typecheck && npm test",
+    "check:bot": "cd bot && ([ -d node_modules ] || npm ci) && npm run typecheck && npm test",
+    "check:web": "cd web && ([ -d node_modules ] || npm ci) && npm test && npm run build"
   }
 }

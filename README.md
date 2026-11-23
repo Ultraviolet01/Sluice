@@ -6,11 +6,28 @@ Small and mid-size companies have no treasury team. Bills are paid by hand, cash
 
 Sluice keeps the money in the company's own vault on **QDay Aevum** and lets the agent settle only the bills the owner listed: that payee, that amount, that schedule. Anything outside the owner's limits waits for the owner. The rules live in the contract, so they hold even if the agent's model is fooled or its key is stolen.
 
-**Live:** https://usesluice.vercel.app · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot) · **Proof on chain:** [docs/VERIFIED.md](docs/VERIFIED.md) (every contract function used live on Aevum, with explorer links)
+**Live:** https://usesluice.vercel.app · Telegram: [@Sluice1_bot](https://t.me/Sluice1_bot)
 
 Built for **Aevum Builder Challenge #1** · tracks: Native AI Assistants, Invoice Payments.
 
 > All code in this repository was written during the build window (Nov 16 to Dec 11, 2026).
+
+## Proven live on Aevum Testnet
+
+Not just tests on a laptop: every function below was used for real on the live chain. Click any link to see the transaction.
+
+| What we checked | Result | See it |
+|---|---|---|
+| The agent pays a listed bill on its own | Paid Northwind Hosting 1.00 tUSD8, inside every limit | [transaction](https://explorer-test.qday.info/tx/0x48003b9e0b7145f44e629a5f0a6a314c05b9287fa2db10ac5de8de10ec59841f) |
+| A bill over the agent's cap goes to the owner | Agent proposed it; the owner approved; 0.8 tUSD8 reached that bill's payee | [proposal](https://explorer-test.qday.info/tx/0x05d0c3e1eff8350c9b6c06b921432aac3728bab1c8da5cb8a741b4d29b49d411) · [approval](https://explorer-test.qday.info/tx/0x341ae81cdc27c70bb787c492679c8f4738cfb84e34ba616afe913f060ebfe74e) |
+| A "new bank details" scam invoice | Refused every round: the payee is blocked | [agent run log](https://github.com/Ultraviolet01/Sluice/actions/runs/45167004111) |
+| The Telegram bot's key (guardian) | Could pause and block; could **not** unpause, approve or withdraw | [pause by the bot](https://explorer-test.qday.info/tx/0xf8c57ca6898bda9e5458d784302e305034fbee2f0f3f0c6a94c5e0860b2e415d) |
+| Every contract function, owner, agent and bot | **59 of 59** behaved as designed | [full list](docs/VERIFIED.md#every-contract-function-used-live) |
+| Deposit, agent payment, approval, withdrawal | **10 of 10**, checked against real token balances | [details](docs/VERIFIED.md#money-moving-live) |
+| A stolen agent key | **28 of 28** attacks refused | [details](docs/VERIFIED.md#a-stolen-agent-key-against-the-live-vault) |
+| 101 junk proposals from the agent's key | Only 2 accepted (one per bill due); the owner could still act | [details](docs/VERIFIED.md#proposal-flood) |
+
+Both contracts' source code is verified on the explorer: [SluiceFactory](https://explorer-test.qday.info/address/0x3aa047ecdE17F1ed439d3bED372A1e36EFD462F9), [SluiceVault](https://explorer-test.qday.info/address/0x15deBE3Bed0A0Bf705B6800d279f038097dc1706).
 
 ## How it works
 
@@ -62,7 +79,7 @@ You need Node.js 22.
 npm run verify
 ```
 
-One line per check, ending `VERIFY PASSED: 7 passed, 0 failed`: 59 contract tests (vault, factory, the attack suite and randomised runs), the agent's typecheck and 44 tests (including 2,000-case randomised checks), the bot's tests, the web tests, and the web build.
+Ends `VERIFY PASSED: contracts, agent, bot and web`: 59 contract tests (vault, factory, the attack suite and randomised runs), the agent's typecheck and 44 tests (including 2,000-case randomised checks), the bot's tests, the web tests, and the web build.
 
 ### See the agent work, locally
 
@@ -84,7 +101,7 @@ You see Northwind paid alone, Atlas proposed (over the cap), Figma proposed (new
 
 ### On Aevum Testnet
 
-After deploying: `npm run demo:setup`, `npm run functions`, `npm run money`, `npm run attacks` and `npm run flood` in `contracts/` (each with `-- --network aevumTestnet`) set up the demo company and run the stolen-key checks against it; `npm run agent:new-key`, `agent:fund` and `agent:rotate` create, fund and rotate the agent's key; `npm run demo` in `agent/` tells one round step by step; `node scripts/verified.mjs` writes [docs/VERIFIED.md](docs/VERIFIED.md) from their records.
+After deploying: `npm run demo:setup`, `npm run functions`, `npm run money`, `npm run attacks` and `npm run flood` in `contracts/` (each with `-- --network aevumTestnet`) set up the demo company and run the stolen-key checks against it; `npm run agent:new-key`, `agent:fund` and `agent:rotate` create, fund and rotate the agent's key; `npm run demo` in `agent/` tells one round step by step; `node scripts/verified.mjs` in `contracts/` writes [docs/VERIFIED.md](docs/VERIFIED.md) from their records.
 
 ### The dashboard
 
