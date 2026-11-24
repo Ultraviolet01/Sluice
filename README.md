@@ -47,6 +47,7 @@ flowchart LR
   end
   subgraph Aevum["QDay Aevum Testnet"]
     F["SluiceFactory"]
+    I["ERC-8004<br/>Identity Registry"]
     V["SluiceVault<br/>holds tUSD8<br/>enforces the line"]
   end
   C["Claude Haiku 5.5"]
@@ -59,6 +60,8 @@ flowchart LR
   R -. "draft bill" .-> C
   A -- "checkPayment, pay, propose" --> V
   A -. "second look, stricter only;<br/>plain-English reasons" .-> C
+  A -. "Confirmation of Payee" .-> I
+  W -. "payee check" .-> I
   A -- "alerts" --> T
   T -- "commands, Reject / Block" --> B
   B -- "pause, block, reject<br/>(guardian key)" --> V
@@ -68,6 +71,53 @@ flowchart LR
 1. **The owner lists bills and sets the line**: per-payment cap, rolling 24-hour budget, cash buffer, approval threshold, approved and blocked payees, and a session for the agent with an expiry.
 2. **The agent runs every 15 minutes.** It forecasts the next 14 days, asks the vault about each bill that's due, and pays what fits. A bill that's over the line, to a new payee, or more than 25% above that payee's usual amount goes to the owner as a proposal. Before paying anything alone, an injection guard and then Claude Haiku 5.5 take a second look, and can only make the decision stricter.
 3. **The owner signs the big ones** in the dashboard, with the reasons and policy checks laid out, and gets a Telegram message when something needs them. Every payment and rule change is a receipt on chain.
+
+**How the agent decides one bill.** The vault has the last word on every step: even if the agent skipped one, the contract would refuse.
+
+```mermaid
+flowchart TD
+  S["A listed bill falls due"] --> Q{"Vault: checkPayment"}
+  Q -- "payee blocked" --> X["Refuse<br/>nothing is signed"]
+  Q -- "over a cap, new payee,<br/>or below the cash buffer" --> PR["Propose to the owner"]
+  Q -- "fits the owner's line" --> N{"Payee confirmed?<br/>ERC-8004 registry"}
+  N -- "name and address disagree" --> PR
+  N -- "confirmed or not registered" --> G{"Injection guard,<br/>then Claude review"}
+  G -- "unusual or pressured" --> PR
+  G -- "looks like fraud" --> X
+  G -- "ok" --> PAY["pay(billId, period)<br/>runs alone"]
+  PR --> H["Owner approves or rejects<br/>(dashboard or Telegram)"]
+  H -- "approve" --> PAY
+  PAY --> R["Receipt on chain:<br/>BillPaid, with the reason"]
+```
+
+**One invoice, start to finish.**
+
+```mermaid
+sequenceDiagram
+  actor Owner
+  participant Web as Dashboard
+  participant Claude as Claude Haiku 5.5
+  participant Vault as SluiceVault
+  participant Agent as Sluice agent
+  participant TG as Telegram
+  Owner->>Web: upload invoice (PDF or photo)
+  Web->>Claude: read it
+  Claude-->>Web: draft bill (vendor, address, amount, due)
+  Owner->>Vault: addBill (signs after checking every field)
+  loop every 15 minutes
+    Agent->>Vault: checkPayment(bill, period)
+    Vault-->>Agent: runs alone / needs approval / blocked, and why
+  end
+  alt fits the line and passes the checks
+    Agent->>Vault: pay(bill, period)
+    Vault-->>Owner: BillPaid receipt
+  else needs the owner
+    Agent->>Vault: propose(bill, period, note)
+    Agent->>TG: alert with Approve in Sluice / Reject / Block payee
+    Owner->>Vault: approve (signs)
+    Vault-->>Owner: BillPaid receipt
+  end
+```
 
 A bill that would break the cash buffer but isn't due yet is held until it is: money may come in first. Bills marked **critical** (payroll, rent) are paid first and never held. Each proposal's reason is written in plain English by Claude Haiku 5.5 from the agent's own facts.
 
@@ -81,7 +131,9 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 
 Small and mid-size companies with recurring bills and no treasury team: agencies, studios, small importers, DAOs and crypto-native startups that already hold stablecoins. Today a founder either pays every invoice by hand or hands a bookkeeper (or a script) the keys. Sluice gives them the automation without the key risk: bills paid on time, a shortfall seen 14 days ahead, and fake "new bank details" invoices refused by the contract itself.
 
-How it would reach them: a free tier for one company and a few bills, then a monthly fee per company for the hosted agent and Telegram alerts (the vault stays the owner's, so they can leave at any time and keep their money and history). The first users would come from teams already paying contractors and software in stablecoins, through the wallets and accounting tools they use. These are plans, not validated numbers.
+Sluice started from a request people kept making in public: builders and small teams asking for an autonomous treasury agent that pays bills without being handed the keys. Sluice is the answer to that: the agent does the work, and the contract holds the line.
+
+How it reaches them: a free tier for one company and a few bills, then a monthly fee per company for the hosted agent and Telegram alerts. The vault stays the owner's, so they can leave at any time and keep their money and history. The first users are teams already paying contractors and software in stablecoins, reached through the wallets and accounting tools they use.
 
 ## Where it runs
 
