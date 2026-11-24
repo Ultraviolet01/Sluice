@@ -131,6 +131,20 @@ Anyone can **create their company's vault** from the dashboard in one signature 
 
 Small and mid-size companies with recurring bills and no treasury team: agencies, studios, small importers, DAOs and crypto-native startups that already hold stablecoins. Today a founder either pays every invoice by hand or hands a bookkeeper (or a script) the keys. Sluice gives them the automation without the key risk: bills paid on time, a shortfall seen 14 days ahead, and fake "new bank details" invoices refused by the contract itself.
 
+### The losses are real
+
+Paying the wrong address is the most expensive routine mistake a finance team can make, and the numbers are public:
+
+| What | Figure | Source |
+|---|---|---|
+| Losses to business email compromise (fake "we've changed our bank details" invoices and spoofed payees), US complaints to the FBI | **$2.77 billion in 2024**, **$2.95 billion in 2023**, **$2.74 billion in 2022**, about 21,000 complaints a year | FBI Internet Crime Complaint Center, [2024 report](https://www.ic3.gov/AnnualReport/Reports/2024_IC3Report.pdf) and [2023 report](https://www.ic3.gov/AnnualReport/Reports/2023_IC3Report.pdf) |
+| All losses reported to the FBI in 2024 | **$16.6 billion**, up 33% on 2023 | FBI IC3, 2024 report |
+| Companies hit by payments fraud | **79%** were victims of attempted or actual payments fraud in 2024; business email compromise was the most common route (**63%**) | Association for Financial Professionals, [2025 survey](https://www.financialprofessionals.org/about/learn-more/press-releases/Details/survey-79-percent-of-organizations-were-victims-of-attempted-or-actual-payments-fraud-activity-in-2024/) |
+| The same survey a year later | **76%** of US organisations met attempted or actual payments fraud in 2025, and **74%** were affected by business email compromise | AFP, [2026 survey](https://www.financialprofessionals.org/about/learn-more/press-releases/Details/over-75-percent-of-us-firms-experienced-payments-fraud-in-2025-while-ai-adoption-for-fraud-mitigation-lags/) |
+| Crypto stolen in 2024 | **$2.2 billion**, and **43.8%** of it through compromised private keys, the largest single cause | Chainalysis, [2024 hacking report](https://www.chainalysis.com/blog/crypto-hacking-stolen-funds-2025/) |
+
+These are the two ways a company loses treasury money: it pays an address an attacker supplied, or a key that can move the money is stolen. Sluice answers both. The agent can only pay bills the owner listed, and the payee is checked against its registered identity first. A stolen agent key can still only pay those same listed bills, inside its caps.
+
 Sluice started from a request people kept making in public: builders and small teams asking for an autonomous treasury agent that pays bills without being handed the keys. Sluice is the answer to that: the agent does the work, and the contract holds the line.
 
 How it reaches them: a free tier for one company and a few bills, then a monthly fee per company for the hosted agent and Telegram alerts. The vault stays the owner's, so they can leave at any time and keep their money and history. The first users are teams already paying contractors and software in stablecoins, reached through the wallets and accounting tools they use.
