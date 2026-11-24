@@ -145,8 +145,6 @@ Paying the wrong address is the most expensive routine mistake a finance team ca
 
 These are the two ways a company loses treasury money: it pays an address an attacker supplied, or a key that can move the money is stolen. Sluice answers both. The agent can only pay bills the owner listed, and the payee is checked against its registered identity first. A stolen agent key can still only pay those same listed bills, inside its caps.
 
-Sluice started from a request people kept making in public: builders and small teams asking for an autonomous treasury agent that pays bills without being handed the keys. Sluice is the answer to that: the agent does the work, and the contract holds the line.
-
 How it reaches them: a free tier for one company and a few bills, then a monthly fee per company for the hosted agent and Telegram alerts. The vault stays the owner's, so they can leave at any time and keep their money and history. The first users are teams already paying contractors and software in stablecoins, reached through the wallets and accounting tools they use.
 
 ## Where it runs
