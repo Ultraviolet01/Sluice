@@ -27,7 +27,7 @@ function checks(m: Model, a: ApprovalRow, ids: Identity[] | null) {
   const p = m.payees.find((x) => x.addr.toLowerCase() === a.payee.toLowerCase());
   const s = m.session;
   const after = m.balance - a.amount;
-  const cop = ids ? copLine(confirmPayee(a.payee, a.label, ids), a.payee) : null;
+  const cop = ids ? copLine(confirmPayee(a.payee, a.label, ids), a.payee, Boolean(p?.allowed && !p?.blocked)) : null;
   return [
     ...(cop ? [{ label: cop.text, pass: cop.ok === true }] : []),
     { label: "Payee not on the blocklist", pass: !p?.blocked, fail: "Blocked: cannot be paid" },

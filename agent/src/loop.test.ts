@@ -155,3 +155,9 @@ test("a confirmed payee is paid as usual", async () => {
   await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null), identities: [{ agentId: 1, name: "Northwind Hosting Ltd", wallet: OK }] });
   assert.ok(calls.includes("pay 0/0"));
 });
+
+test("an approved payee registered under another name is paid, not held", async () => {
+  const { chain, calls } = fakeChain([bill(0, OK, 80, "Contractor payroll")]);
+  await runVault(chain, VAULT, { dryRun: false, reviewer: reviewer(null), identities: [{ agentId: 4, name: "Ada Okafor", wallet: OK }] });
+  assert.ok(calls.includes("pay 0/0"), calls.join("|"));
+});

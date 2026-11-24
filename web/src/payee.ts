@@ -100,8 +100,10 @@ export function useIdentities(): Identity[] | null {
 }
 
 /** A short line for the screens: tone and text. */
-export function copLine(c: Confirmation, payee: string): { ok: boolean | null; text: string } {
+export function copLine(c: Confirmation, payee: string, approved = false): { ok: boolean | null; text: string } {
   if (c.status === "confirmed") return { ok: true, text: `Payee confirmed: ${c.identity.name} (ERC-8004 #${c.identity.agentId})` };
+  // You approved this address yourself: the registry's different name is a note, not a warning.
+  if (c.status === "mismatch" && approved) return { ok: true, text: `Approved payee, registered as ${c.identity.name} (ERC-8004 #${c.identity.agentId})` };
   if (c.status === "unregistered") return { ok: null, text: "Payee not in the ERC-8004 registry: check the address with the vendor" };
   return { ok: false, text: `Not confirmed: ${describe(c, payee)}` };
 }

@@ -8,13 +8,13 @@ import { confirmPayee, copLine, useIdentities } from "../payee.ts";
 
 /** Lists a bill on the vault (addBill), optionally drafted from an invoice by Claude. */
 export function BillForm({ onClose }: { onClose: () => void }) {
-  const { act, busy } = useApp();
+  const { act, busy, model } = useApp();
   const today = new Date().toISOString().slice(0, 10);
   const [f, setF] = useState({ label: "", payee: "", amount: "", due: today, repeat: "0", invoiceText: "", critical: false });
   const [err, setErr] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
   const ids = useIdentities();
-  const cop = ids && isAddress(f.payee) && f.label.trim() ? copLine(confirmPayee(f.payee, f.label, ids), f.payee) : null;
+  const cop = ids && isAddress(f.payee) && f.label.trim() ? copLine(confirmPayee(f.payee, f.label, ids), f.payee, Boolean(model?.payees.some((x) => x.allowed && !x.blocked && x.addr.toLowerCase() === f.payee.toLowerCase()))) : null;
 
   async function readOne(file: File) {
     setReading(true);

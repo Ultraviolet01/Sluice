@@ -167,7 +167,7 @@ How it reaches them: a free tier for one company and a few bills, then a monthly
 | Guardian | Optional second key (the Telegram bot) that can only make a vault stricter: pause, block a payee, reject a proposal. Never unpause, unblock, approve, change a limit or move money |
 | Ownership | Two-step hand-over to a new wallet or a Safe: the owner offers, the new owner accepts, and the owner can cancel before then |
 | Payees | New payees need the owner; the blocklist always wins, even on owner approval |
-| Confirmation of Payee | Before paying alone, the agent checks the bill's payee against the ERC-8004 Identity Registry. A bill naming a registered business at a different address, or a registered address under another name, goes to the owner instead. The bill form and Approvals show the result. Enforced by the agent, not the vault |
+| Confirmation of Payee | Before paying alone, the agent checks the bill's payee against the ERC-8004 Identity Registry. A bill naming a registered business at a different address goes to the owner instead. A registered address under another name is only a note when the owner has already approved that payee (a contractor's wallet on a "Payroll" bill), and a warning otherwise. The bill form and Approvals show the result. Enforced by the agent, not the vault |
 | Human approval | Bills outside the limits are proposed with a note and wait for `approve` or `reject` |
 | Cash buffer | No agent payment may drop the vault below `cashBuffer` |
 | Ask first | `checkPayment(agent, billId, period)` says whether a payment runs alone, needs approval or is blocked, and why |
@@ -183,7 +183,7 @@ You need Node.js 22.
 npm run verify
 ```
 
-Ends `VERIFY PASSED: contracts, agent, bot and web`: 64 contract tests (vault, factory, ERC-8004 registry, the attack suite and randomised runs), the agent's typecheck and 52 tests (including 2,000-case randomised checks), the bot's tests, the web tests, and the web build.
+Ends `VERIFY PASSED: contracts, agent, bot and web`: 64 contract tests (vault, factory, ERC-8004 registry, the attack suite and randomised runs), the agent's typecheck and 53 tests (including 2,000-case randomised checks), the bot's tests, the web tests, and the web build.
 
 ### See the agent work, locally
 

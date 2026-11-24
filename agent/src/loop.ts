@@ -93,10 +93,12 @@ export async function runVault(chain: Chain, vault: Address, o: RoundOptions): P
     const history = v.paid.filter((p) => p.payee.toLowerCase() === bill.payee.toLowerCase()).map((p) => p.amount);
     let action: Action = decide(band, reason, { spike: isSpike(bill.amount, history), critical: bill.critical, due, now });
 
-    // Confirmation of Payee: a bill whose name and address disagree with the registry goes to the owner.
+    // Confirmation of Payee. A bill naming a registered business at another address goes to the owner.
+    // A registered address under a different bill name does not: a payment can only run alone to a
+    // payee the owner already approved (the vault checks), so the owner vouched for that address;
+    // the review is told instead.
     const cop = confirmPayee(bill.payee, bill.label, o.identities ?? []);
-    const copNote = describe(cop, bill.payee);
-    if (action.kind === "pay" && copNote) action = { kind: "propose", reason: `needs you: payee not confirmed: ${copNote}` };
+    if (action.kind === "pay" && cop.status === "impostor") action = { kind: "propose", reason: `needs you: payee not confirmed: ${describe(cop, bill.payee)}` };
 
     if (action.kind === "pay" && reviews < maxReviews) {
       reviews++;
@@ -107,7 +109,8 @@ export async function runVault(chain: Chain, vault: Address, o: RoundOptions): P
         due: day(due),
         history: history.map(m),
         knownPayees: knownPayees.filter((k) => !k.endsWith(`(${bill.payee})`)),
-        payeeRegistry: cop.status === "confirmed" ? `confirmed: registered to ${cop.identity.name}` : "not registered",
+        payeeRegistry: cop.status === "confirmed" ? `confirmed: registered to ${cop.identity.name}`
+          : cop.status === "mismatch" ? `address registered to ${cop.identity.name}; the owner approved this payee` : "not registered",
       });
       action = stricter(action, verdict);
     } else if (action.kind === "pay") {
