@@ -355,7 +355,7 @@ Details: [docs/JUDGING.md](docs/JUDGING.md#roadmap-to-mainnet).
 
 [![Sluice demo video](https://img.youtube.com/vi/RquoIjXKTAc/hqdefault.jpg)](https://youtu.be/RquoIjXKTAc)
 
-**https://youtu.be/RquoIjXKTAc** (3:31). Real screen recordings of Sluice working on Aevum Testnet: a company created, an invoice read by Claude, payees approved and blocked, the agent's real round (including Claude catching a lookalike vendor), approvals and a rejection signed on chain, the Telegram bot, the Excel report, and every transaction opened on the explorer.
+**https://youtu.be/RquoIjXKTAc** (2:58). Real screen recordings of Sluice working on Aevum Testnet: a company created, an invoice read by Claude, payees approved and blocked, the agent's real round (including Claude catching a lookalike vendor), approvals and a rejection signed on chain, the Telegram bot, the Excel report, and every transaction opened on the explorer.
 
 ## Team
 
