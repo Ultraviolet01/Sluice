@@ -25,7 +25,7 @@ Criteria and weights from the Aevum Builder Challenge #1 starter guide.
 | No keys or `.env` in the repository or history | `.env` is in `.gitignore`; no key has ever been committed |
 | README lets a stranger run it | `npm run verify` at the root, then the steps in the README |
 | Deployed on the official testnet | Pending deployment |
-| Demo video without login | https://youtu.be/HUCGmNpz2mI (3:31, public) |
+| Demo video without login | https://youtu.be/c3efuuPSQZE (3:31, public) |
 | Every team member listed and registered | On DoraHacks |
 
 ## Roadmap to mainnet
